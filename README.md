@@ -1,6 +1,5 @@
 # flight-data-recorder
 
-
 ## Table of Contents
 - [Getting Started](#-getting-started)
 - [How to run notebooks](#-how-to-run-notebooks)
@@ -9,12 +8,12 @@
 
 
 ## Getting Started
-If you want to run the code, interact, and play around with the data, you'll want to clone this repo and get python set up on your computer. The items of note is the data processing and visualization notebook which can be found in `sensor/data_analysis.ipynb`. The raw flight data belongs in the`sensor/inputData/` directory as text files in CSV format.
+If you want to run the code, interact, and play around with the data, you'll want to clone this repo and get python set up on your computer. The item of note is the data processing and visualization notebook which can be found in `sensor/data_analysis.ipynb`. The raw flight data belongs in the`sensor/inputData/` directory as text files in CSV format.
 
 ## Installing Miniconda
 Miniconda is a lightweight distribution of Anaconda, a python distribution. Installing either Miniconda or Anaconda will install python, some popular data science packages, and conda. Conda is the package and environment manager. It helps manage and isolate packages for your different python projects. You use it with command line commands in the terminal or with the Anaconda Prompt. I'm using Miniconda over Anaconda because we don't need all the bulky packages that Anaconda installs. Miniconda gives us a minimal installation and we can just install a few packages we need.
 
-Skip this step if you already have Anaconda or Miniconda installed.
+Skip this step if you already have Anaconda or Miniconda installed. You can check by running `conda` in a terminal. 
 
 If you're using Windows, you can either install Anaconda from the browser, and use Anaconda Prompt, or you can use WSL2. ([Here](https://towardsdatascience.com/configuring-jupyter-notebook-in-windows-subsystem-linux-wsl2-c757893e9d69) is how to install WSL2).  If you're using Mac or Linux, run these commands in shell.
 ```
@@ -51,6 +50,11 @@ conda env create -f environment.yml
 ```
 
 ## Run Jupyter
+Setup interactive widgets and build.
+```
+jupyter labextension install @jupyter-widgets/jupyterlab-manager
+jupyter lab build
+```
 Now to open the notebook, just run
 ```
 jupyter lab --no-browser
