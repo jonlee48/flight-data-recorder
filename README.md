@@ -1,9 +1,10 @@
 # flight-data-recorder
 
 ## Table of Contents
-- [Getting Started](#-getting-started)
-- [How to run notebooks](#-how-to-run-notebooks)
-- [Inputting Data](#)
+- [Getting Started](#getting-started)
+- [Installing Miniconda](#installing-miniconda)
+- [Setting up the Environment](#setting-up-the-environment)
+- [Running the Notebook](#running-the-notebook)
 - [Visualizing Data](#)
 
 
@@ -54,7 +55,7 @@ conda env export > environment.yml
 conda env create -f environment.yml
 ```
 
-## Run Jupyter
+## Running the Notebook
 Before we start the Jupyter lab server, we want to setup interactive widgets. This allows us to get interactive plots in the notebook!
 ```
 jupyter labextension install @jupyter-widgets/jupyterlab-manager
