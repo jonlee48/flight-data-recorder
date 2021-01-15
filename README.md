@@ -8,7 +8,7 @@
 
 
 ## Getting Started
-If you want to run the code, interact, and play around with the data, you'll want to clone this repo and get python set up on your computer. The item of note is the data processing and visualization notebook which can be found in `sensor/data_analysis.ipynb`. The raw flight data belongs in the`sensor/inputData/` directory as text files in CSV format.
+If you want to run the code, interact, and play around with the data, you'll want to clone this repo and get python set up on your computer. The data processing and visualization notebook is `sensor/data_analysis.ipynb`. It takes raw flight data as txt files in the the `sensor/inputData/` directory.
 
 ## Installing Miniconda
 Miniconda is a lightweight distribution of Anaconda, a python distribution. Installing either Miniconda or Anaconda will install python, some popular data science packages, and conda. Conda is the package and environment manager. It helps manage and isolate packages for your different python projects. You use it with command line commands in the terminal or with the Anaconda Prompt. I'm using Miniconda over Anaconda because we don't need all the bulky packages that Anaconda installs. Miniconda gives us a minimal installation and we can just install a few packages we need.
