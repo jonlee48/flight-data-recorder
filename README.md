@@ -31,7 +31,9 @@ conda config --set auto_activate_base false
 conda update conda
 conda update --all
 ```
-Now run `conda env list`. You should see the `base` environment, the default environment. We're going to make a new one for this project and its dependencies. First, we'll clone this repo and `cd` into it.
+
+## Setting up the Environment
+Now we'll use conda to set up a new python environment. Run `conda env list` to see a list of environments. You should see the `base` environment, the default environment. We're going to make a new one for this project called `sensor`. First, clone this repo and `cd` into it.
 ```
 git clone https://github.com/jonlee48/flight-data-recorder.git
 cd flight-data-recorder
@@ -39,9 +41,9 @@ conda env create -f environment.yml
 conda activate sensor
 conda env list
 ```
-We have now created a new environment from the `environment.yml` yaml file, which specifies all the dependencies and versions we needed. Now you should see `$(sensor)` to the left of your prompt. This is the name of the environment you just created. It is now active, so any python executed in that shell will run in the `sensor` environment.
+We have now created a new environment built from the `environment.yml` yaml file. You should now see `$(sensor)` to the left of your prompt. This is the name of the environment you just created. It is now active, so any python code executed in that shell will run in the `sensor` environment.
 
-Here's a reference of some useful commands to keep handy for later. See the [docs](http://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html
+Here's a reference of some useful conda commands to keep handy for later. See the [docs](http://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html
 ) for more info.
 ```
 conda env list
@@ -58,7 +60,7 @@ Before we start the Jupyter lab server, we want to setup interactive widgets. Th
 jupyter labextension install @jupyter-widgets/jupyterlab-manager
 jupyter lab build
 ```
-Now we can run the notebook!
+Now we can finally run the notebook!
 ```
 jupyter lab --no-browser
 ```
