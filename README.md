@@ -8,14 +8,16 @@
 
 
 ## Getting Started
-If you want to run the code, interact, and play around with the data, you'll want to clone this repo and get python set up on your computer. The data processing and visualization notebook is `sensor/data_analysis.ipynb`. It takes raw flight data as txt files in the the `sensor/inputData/` directory.
+If you want to run the code, interact, and play around with the data, you'll want to clone this repo and get python set up on your computer. The installation below walks through setting up Miniconda and the conda environment. If you already have Anaconda installed, you can skip to [Setting up the Environment](#setting-up-the-environment). All the data processing and visualization code is in a single notebook: `sensor/data_analysis.ipynb`. All the raw flight data is stored in one directory: `sensor/inputData/`.
+
+The code for the Feather is in the `feather` directory.
 
 ## Installing Miniconda
 Miniconda is a lightweight distribution of Anaconda, a python distribution. Installing either Miniconda or Anaconda will install python, some popular data science packages, and conda. Conda is the package and environment manager. It helps manage and isolate packages for your different python projects. You use it with command line commands in the terminal or with the Anaconda Prompt. I'm using Miniconda over Anaconda because we don't need all the bulky packages that Anaconda installs. Miniconda gives us a minimal installation and we can just install a few packages we need.
 
 Skip this step if you already have Anaconda or Miniconda installed. You can check by running `conda` in a terminal. 
 
-If you're using Windows, you can either install Anaconda from the browser, and use Anaconda Prompt, or you can use WSL2. ([Here](https://towardsdatascience.com/configuring-jupyter-notebook-in-windows-subsystem-linux-wsl2-c757893e9d69) is how to install WSL2).  If you're using Mac or Linux, run these commands in shell.
+If you're using Windows, you can either install Anaconda from the browser, and use Anaconda Prompt, or you can use WSL2. ([Here](https://towardsdatascience.com/configuring-jupyter-notebook-in-windows-subsystem-linux-wsl2-c757893e9d69) is how to install WSL2). Then follow the instructions below. If you're using Mac or Linux, run these commands in shell.
 ```
 cd ~
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
@@ -29,14 +31,15 @@ conda config --set auto_activate_base false
 conda update conda
 conda update --all
 ```
-Now run `conda env list`. You should see the `base` environment. We're going to make a new one for this project and its dependencies. Now `cd` into the `flight-data-recorder/` directory and run:
+Now run `conda env list`. You should see the `base` environment, the default environment. We're going to make a new one for this project and its dependencies. First, we'll clone this repo and `cd` into it.
 ```
+git clone https://github.com/jonlee48/flight-data-recorder.git
+cd flight-data-recorder
 conda env create -f environment.yml
 conda activate sensor
 conda env list
 ```
-This creates a new environment from the `environment.yml` file which specifies all the dependencies and versions to install.
-Now you should `$(sensor)` to the left of your prompt. This is the name of the environment you just created. It is now active, so any python executed in that shell will run in the `sensor` environment.
+We have now created a new environment from the `environment.yml` yaml file, which specifies all the dependencies and versions we needed. Now you should see `$(sensor)` to the left of your prompt. This is the name of the environment you just created. It is now active, so any python executed in that shell will run in the `sensor` environment.
 
 Here's a reference of some useful commands to keep handy for later. See the [docs](http://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html
 ) for more info.
@@ -50,12 +53,12 @@ conda env create -f environment.yml
 ```
 
 ## Run Jupyter
-Setup interactive widgets and build.
+Before we start the Jupyter lab server, we want to setup interactive widgets. This allows us to get interactive plots in the notebook!
 ```
 jupyter labextension install @jupyter-widgets/jupyterlab-manager
 jupyter lab build
 ```
-Now to open the notebook, just run
+Now we can run the notebook!
 ```
 jupyter lab --no-browser
 ```
