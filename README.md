@@ -45,7 +45,7 @@ We have now created a new environment built from the yaml file. You should now s
 
 ### Anaconda Navigator:
 1. Download and unzip this repository. 
-2. Select Environment, Import. Name it 'fdr', and select the `my_env.yml` from your downloads.\
+2. Select Environment, Import. Name it 'fdr', and select the `my_env.yml` from your downloads.
 3. Click Import
 
 ### Next
@@ -75,10 +75,10 @@ If you're using Anaconda Prompt:
 ```
 jupyter lab --no-browser
 ```
-If there are any issues seeing the plots, you might have to shutdown the notebook and setup interactive widgets.
-```
-jupyter labextension install @jupyter-widgets/jupyterlab-manager
-jupyter lab build
-```
+> If there are any issues seeing the plots, you might have to shutdown the notebook and setup interactive widgets.
+> ```
+> jupyter labextension install @jupyter-widgets/jupyterlab-manager
+> jupyter lab build
+> ```
 
 If you're using Anaconda Navigator, click the environment name and the green run button. Select 'Open with Jupyter Notebook'.
