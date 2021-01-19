@@ -21,7 +21,7 @@ Anaconda Prompt:
 git clone https://github.com/jonlee48/flight-data-recorder.git
 cd flight-data-recorder
 conda deactivate
-conda env create -f my_env.yml
+conda env create -f my_env_no_builds.yml
 conda env list
 conda activate fdr
 ```
