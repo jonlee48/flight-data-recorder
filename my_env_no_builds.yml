@@ -1,0 +1,17 @@
+name: fdr
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pandas
+  - scikit-learn
+  - matplotlib
+  - jupyter
+  - jupyterlab
+  - seaborn
+  - pip
+  - git
+  - jupyter_contrib_nbextensions
+  - nodejs
+  - ipympl
+  - cartopy
