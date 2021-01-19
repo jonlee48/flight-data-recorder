@@ -14,18 +14,22 @@ If you want to run the code, interact, and play around with the data, you'll wan
 The code for the Feather is in the `feather` directory.
 
 ## Installing Anaconda
-Install [Anaconda](https://www.anaconda.com/products/individual) for your OS. Follow all the default setup instructions. 
+Install [Anaconda](https://www.anaconda.com/products/individual) for your OS. If you're familiar with using the commandline, then use Anaconda Prompt. If you'd rather use a graphical interface, then follow the steps for the Anaconda Navigator.
 
 Anaconda Prompt:
-After installing, open the Anaconda Prompt. 
 ```
 git clone https://github.com/jonlee48/flight-data-recorder.git
 cd flight-data-recorder
-conda env create -f manual_env.yml
+conda deactivate
+conda env create -f my_env.yml
+conda env list
+conda activate fdr
 ```
 
 Using Anaconda Navigator:
-
+1. Download and unzip this repository. 
+2. Select Environment, Import. Name it 'fdr', and select the `my_env.yml` from your downloads.\
+3. Import
 
 
 ## Installing Miniconda
