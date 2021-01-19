@@ -17,11 +17,13 @@ The code for the Adafruit Feather is in the `Arduino` directory.
 Installing Anaconda will install python, some popular data science packages, and conda. Conda is a python package and environment manager. It helps manage and isolate packages for your different python projects. You can use it with either Anaconda Prompt (a terminal) or Anaconda Navigator (a GUI).
 
 > Note: you can also install Miniconda, which is a lightweight distribution of Anaconda, so it takes up less disk space. [Here](https://towardsdatascience.com/configuring-jupyter-notebook-in-windows-subsystem-linux-wsl2-c757893e9d69) is how to install Miniconda for WSL2 or Linux. Essentially, you'll want to run these commands in terminal.
->     cd ~
->     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
->     chmod +x Miniconda3-latest-Linux-x86_64.sh
->     sh Miniconda3-latest-Linux-x86_64.sh
->     rm Miniconda3-latest-Linux-x86_64.sh
+> ```
+> cd ~
+> wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+> chmod +x Miniconda3-latest-Linux-x86_64.sh
+> sh Miniconda3-latest-Linux-x86_64.sh
+> rm Miniconda3-latest-Linux-x86_64.sh
+> ```
 
 Install Anaconda from their [website](https://www.anaconda.com/products/individual) for your OS. Follow the default installation instructions. 
 
