@@ -13,6 +13,21 @@ If you want to run the code, interact, and play around with the data, you'll wan
 
 The code for the Feather is in the `feather` directory.
 
+## Installing Anaconda
+Install [Anaconda](https://www.anaconda.com/products/individual) for your OS. Follow all the default setup instructions. 
+
+Anaconda Prompt:
+After installing, open the Anaconda Prompt. 
+```
+git clone https://github.com/jonlee48/flight-data-recorder.git
+cd flight-data-recorder
+conda env create -f manual_env.yml
+```
+
+Using Anaconda Navigator:
+
+
+
 ## Installing Miniconda
 Miniconda is a lightweight distribution of Anaconda, a python distribution. Installing either Miniconda or Anaconda will install python, some popular data science packages, and conda. Conda is the package and environment manager. It helps manage and isolate packages for your different python projects. You use it with command line commands in the terminal or with the Anaconda Prompt. I'm using Miniconda over Anaconda because we don't need all the bulky packages that Anaconda installs. Miniconda gives us a minimal installation and we can just install a few packages we need.
 
@@ -53,6 +68,7 @@ conda activate env_name
 conda deactivate
 conda env export > environment.yml
 conda env create -f environment.yml
+conda remove --name myenv --all
 ```
 
 ## Running the Notebook
