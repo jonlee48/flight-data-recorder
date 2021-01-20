@@ -37,19 +37,13 @@ Type `conda env list` to see a list of environments. You should see the `base` e
 git clone https://github.com/jonlee48/flight-data-recorder.git
 cd flight-data-recorder
 conda deactivate
-conda env create -f my_env_no_builds.yml
+conda env create -f my_env.yml
 conda env list
 conda activate fdr
 ```
 We have now created a new environment built from the yaml file. You should now see `$(fdr)` to the left of your prompt. This is the name of the environment you just created. It is now active, so any python code executed in that shell will run in the `fdr` environment.
 
-### Anaconda Navigator:
-1. Download and unzip this repository. 
-2. Select Environment, Import. Name it 'fdr', and select the `my_env.yml` from your downloads.
-3. Click Import
-
-### Next
-Now that conda is installed, here are some commands I like to run.
+Here are some commands to get setup.
 ```
 conda config --set auto_activate_base false
 conda update conda
@@ -67,6 +61,13 @@ conda env export > environment.yml
 conda env create -f environment.yml
 conda remove --name myenv --all
 ```
+
+### Anaconda Navigator:
+1. Download and unzip this repository. 
+2. Select Environment, Import. Name it 'fdr', and select the `my_env.yml` from your downloads.
+3. Click Import
+
+
 
 ## Running the Notebook
 Now it's time to run the notebook.
