@@ -3,15 +3,15 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - pandas=1.2.0
-  - scikit-learn=0.24.0
-  - matplotlib=3.3.3
-  - jupyter=1.0.0
-  - jupyterlab=3.0.0
-  - seaborn=0.11.1
-  - pip=20.3.3
-  - git=2.30.0
-  - jupyter_contrib_nbextensions=0.5.1
-  - nodejs=15.3.0
-  - ipympl=0.5.8
-  - cartopy=0.18.0
+  - pandas
+  - scikit-learn
+  - matplotlib
+  - jupyter
+  - jupyterlab
+  - seaborn
+  - pip
+  - git
+  - jupyter_contrib_nbextensions
+  - nodejs
+  - ipympl
+  - cartopy
