@@ -81,5 +81,9 @@ jupyter lab --no-browser
 > jupyter labextension install @jupyter-widgets/jupyterlab-manager
 > jupyter lab build
 > ```
+> There might also be an issue with a blank page loading. Try using a different port or restarting your computer.
+> ```
+> jupyter lab --no-browser --port 9999
+> ```
 
 If you're using Anaconda Navigator, click the environment name and the green run button. Select 'Open with Jupyter Notebook'.
