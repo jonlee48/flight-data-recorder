@@ -1,0 +1,444 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://earth.google.com/kml/2.2">
+<Document>
+<name>FlightFeb9th</name>
+<Style id="icon1">
+<IconStyle>
+<scale>0.5</scale>
+</IconStyle>
+</Style>
+<Style id="style1">
+<LineStyle>
+<color>ffffff00</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+<open>1</open>
+
+<Style id="color0">
+<LineStyle>
+<color>ff0000ff</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color1">
+<LineStyle>
+<color>ff001dff</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color2">
+<LineStyle>
+<color>ff003fff</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color3">
+<LineStyle>
+<color>ff005dff</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color4">
+<LineStyle>
+<color>ff007fff</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color5">
+<LineStyle>
+<color>ff009dff</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color6">
+<LineStyle>
+<color>ff00bfff</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color7">
+<LineStyle>
+<color>ff00ddff</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color8">
+<LineStyle>
+<color>ff00ffff</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color9">
+<LineStyle>
+<color>ff00ffe1</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color10">
+<LineStyle>
+<color>ff00ffbf</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color11">
+<LineStyle>
+<color>ff00ffa1</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color12">
+<LineStyle>
+<color>ff00ff7f</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color13">
+<LineStyle>
+<color>ff00ff61</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color14">
+<LineStyle>
+<color>ff00ff3f</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color15">
+<LineStyle>
+<color>ff00ff21</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color16">
+<LineStyle>
+<color>ff00ff00</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color17">
+<LineStyle>
+<color>ff1dff00</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color18">
+<LineStyle>
+<color>ff3fff00</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color19">
+<LineStyle>
+<color>ff5dff00</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color20">
+<LineStyle>
+<color>ff7fff00</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color21">
+<LineStyle>
+<color>ff9dff00</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color22">
+<LineStyle>
+<color>ffbfff00</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color23">
+<LineStyle>
+<color>ffddff00</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color24">
+<LineStyle>
+<color>ffffff00</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color25">
+<LineStyle>
+<color>ffffe100</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color26">
+<LineStyle>
+<color>ffffbf00</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color27">
+<LineStyle>
+<color>ffffa100</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color28">
+<LineStyle>
+<color>ffff7f00</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color29">
+<LineStyle>
+<color>ffff6100</color>
+<colorMode>normal</colorMode>
+
+</LineStyle>
+</Style>
+    
+<Style id="color30">
+<LineStyle>
+<color>ffff3f00</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Style id="color31">
+<LineStyle>
+<color>ffff2100</color>
+<colorMode>normal</colorMode>
+<width>5</width>
+</LineStyle>
+</Style>
+    
+<Snippet>Click on link for more information</Snippet>
+<description><![CDATA[<h1>Tour statistics</h1>
+<table>
+<tr><td>Duration</td><td>09 s</td></tr>
+<tr><td>Distance traveled</td><td>33 m</td></tr>
+<tr><td>Maximum speed</td><td>26.2 km/h</td></tr>
+<tr><td>Average speed</td><td>12.1 km/h</td></tr>
+<tr><td>Max. satellites rcvd</td><td>9</td></tr>
+<tr><td>Min. satellites rcvd</td><td>9</td></tr>
+</table>
+Note: speed values can be unreliable due to GPS measurement errors.
+]]></description>
+
+<Folder>
+<name>placemark icons</name>
+<open>0</open>
+<Placemark>
+<name>20:50:12 (UTC), 0.0 km/h</name>
+<gx:altitudeMode>clampToSeaFloor</gx:altitudeMode>
+<description>Total distance traveled: 0 m
+Current altitude: 68 m
+Number of Satellites: 9</description>
+<styleUrl>#icon1</styleUrl>
+<Point>
+<coordinates>-77.44604667,39.05719167,68</coordinates>
+</Point>
+</Placemark>
+<Placemark>
+<name>20:50:17 (UTC), 0.9 km/h</name>
+<description>Total distance traveled: 1 m
+Current altitude: 68 m
+Number of Satellites: 9</description>
+<styleUrl>#icon1</styleUrl>
+<Point>
+<coordinates>-77.44606000,39.05719167,68</coordinates>
+</Point>
+</Placemark>
+<Placemark>
+<name>20:50:18 (UTC), 9.1 km/h</name>
+<description>Total distance traveled: 3 m
+Current altitude: 68 m
+Number of Satellites: 9</description>
+<styleUrl>#icon1</styleUrl>
+<Point>
+<coordinates>-77.44609167,39.05718667,68</coordinates>
+</Point>
+</Placemark>
+<Placemark>
+<name>20:50:19 (UTC), 26.2 km/h</name>
+<description>Total distance traveled: 11 m
+Current altitude: 68 m
+Number of Satellites: 9</description>
+<styleUrl>#icon1</styleUrl>
+<Point>
+<coordinates>-77.44618333,39.05719667,68</coordinates>
+</Point>
+</Placemark>
+<Placemark>
+<name>20:50:20 (UTC), 24.4 km/h</name>
+<description>Total distance traveled: 19 m
+Current altitude: 69 m
+Number of Satellites: 9</description>
+<styleUrl>#icon1</styleUrl>
+<Point>
+<coordinates>-77.44626500,39.05721833,69</coordinates>
+</Point>
+</Placemark>
+<Placemark>
+<name>20:50:21 (UTC), 23.1 km/h</name>
+<description>Total distance traveled: 26 m
+Current altitude: 69 m
+Number of Satellites: 9</description>
+<styleUrl>#icon1</styleUrl>
+<Point>
+<coordinates>-77.44632667,39.05726000,69</coordinates>
+</Point>
+</Placemark>
+<Placemark>
+<name>20:50:22 (UTC), 21.9 km/h</name>
+<description>Total distance traveled: 33 m
+Current altitude: 70 m
+Number of Satellites: 9</description>
+<styleUrl>#icon1</styleUrl>
+<Point>
+<coordinates>-77.44640167,39.05727500,70</coordinates>
+</Point>
+</Placemark>
+</Folder>
+<Folder>
+<name>line segments</name>
+<open>0</open>
+<Placemark>
+<name>line part</name>
+<styleUrl>#color31</styleUrl>
+<LineString>
+<extrude>0</extrude>
+<tessellate>1</tessellate>
+<altitudeMode>clampToGround</altitudeMode>
+<!-- kml:altitudeModeEnum: clampToGround, relativeToGround, or absolute -->
+<coordinates>-77.44604667,39.05719167,68
+</coordinates></LineString></Placemark>
+<Placemark>
+<name>line part</name>
+<styleUrl>#color30</styleUrl>
+<LineString>
+<extrude>0</extrude>
+<tessellate>1</tessellate>
+<altitudeMode>clampToGround</altitudeMode>
+<!-- kml:altitudeModeEnum: clampToGround, relativeToGround, or absolute -->
+<coordinates>-77.44604667,39.05719167,68
+-77.44606000,39.05719167,68
+</coordinates></LineString></Placemark>
+<Placemark>
+<name>line part</name>
+<styleUrl>#color20</styleUrl>
+<LineString>
+<extrude>0</extrude>
+<tessellate>1</tessellate>
+<altitudeMode>clampToGround</altitudeMode>
+<!-- kml:altitudeModeEnum: clampToGround, relativeToGround, or absolute -->
+<coordinates>-77.44606000,39.05719167,68
+-77.44609167,39.05718667,68
+</coordinates></LineString></Placemark>
+<Placemark>
+<name>line part</name>
+<styleUrl>#color0</styleUrl>
+<LineString>
+<extrude>0</extrude>
+<tessellate>1</tessellate>
+<altitudeMode>clampToGround</altitudeMode>
+<!-- kml:altitudeModeEnum: clampToGround, relativeToGround, or absolute -->
+<coordinates>-77.44609167,39.05718667,68
+-77.44618333,39.05719667,68
+</coordinates></LineString></Placemark>
+<Placemark>
+<name>line part</name>
+<styleUrl>#color2</styleUrl>
+<LineString>
+<extrude>0</extrude>
+<tessellate>1</tessellate>
+<altitudeMode>clampToGround</altitudeMode>
+<!-- kml:altitudeModeEnum: clampToGround, relativeToGround, or absolute -->
+<coordinates>-77.44618333,39.05719667,68
+-77.44626500,39.05721833,69
+</coordinates></LineString></Placemark>
+<Placemark>
+<name>line part</name>
+<styleUrl>#color3</styleUrl>
+<LineString>
+<extrude>0</extrude>
+<tessellate>1</tessellate>
+<altitudeMode>clampToGround</altitudeMode>
+<!-- kml:altitudeModeEnum: clampToGround, relativeToGround, or absolute -->
+<coordinates>-77.44626500,39.05721833,69
+-77.44632667,39.05726000,69
+</coordinates></LineString></Placemark>
+<Placemark>
+<name>line part</name>
+<styleUrl>#color5</styleUrl>
+<LineString>
+<extrude>0</extrude>
+<tessellate>1</tessellate>
+<altitudeMode>clampToGround</altitudeMode>
+<!-- kml:altitudeModeEnum: clampToGround, relativeToGround, or absolute -->
+<coordinates>-77.44632667,39.05726000,69
+-77.44640167,39.05727500,70
+</coordinates></LineString></Placemark>
+</Folder>
+</Document>
+</kml>
