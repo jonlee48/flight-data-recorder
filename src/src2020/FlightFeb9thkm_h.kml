@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document>
+	<name>FlightFeb9thkm/h</name>
+	<open>1</open>
+	<Snippet maxLines="2">Click on link for more information</Snippet>
+	<description><![CDATA[<h1>Tour statistics</h1>
+<table>
+<tr><td>Duration</td><td>09 s</td></tr>
+<tr><td>Distance traveled</td><td>33 m</td></tr>
+<tr><td>Maximum speed</td><td>26.2 km/h</td></tr>
+<tr><td>Average speed</td><td>12.1 km/h</td></tr>
+<tr><td>Max. satellites rcvd</td><td>9</td></tr>
+<tr><td>Min. satellites rcvd</td><td>9</td></tr>
+</table>
+Note: speed values can be unreliable due to GPS measurement errors.]]></description>
+	<Style id="color2">
+		<LineStyle>
+			<color>ff003fff</color>
+			<width>5</width>
+		</LineStyle>
+	</Style>
+	<Style id="color3">
+		<LineStyle>
+			<color>ff005dff</color>
+			<width>5</width>
+		</LineStyle>
+	</Style>
+	<Style id="color0">
+		<LineStyle>
+			<color>ff0000ff</color>
+			<width>5</width>
+		</LineStyle>
+	</Style>
+	<Style id="color20">
+		<LineStyle>
+			<color>ff7fff00</color>
+			<width>5</width>
+		</LineStyle>
+	</Style>
+	<Style id="color30">
+		<LineStyle>
+			<color>ffff3f00</color>
+			<width>5</width>
+		</LineStyle>
+	</Style>
+	<Style id="color5">
+		<LineStyle>
+			<color>ff009dff</color>
+			<width>5</width>
+		</LineStyle>
+	</Style>
+	<Style id="color31">
+		<LineStyle>
+			<color>ffff2100</color>
+			<width>5</width>
+		</LineStyle>
+	</Style>
+	<Style id="icon1">
+		<IconStyle>
+			<scale>0.5</scale>
+		</IconStyle>
+	</Style>
+	<Folder id="0B5EB46229117B6DCF85">
+		<name>placemark icons</name>
+		<Placemark id="07D242A6C2117B7CE18F">
+			<name>20:50:12 (UTC), 0.0 km/h</name>
+			<description>Total distance traveled: 0 m
+Current altitude: 68 m
+Number of Satellites: 9</description>
+			<styleUrl>#icon1</styleUrl>
+			<Point>
+				<coordinates>-77.44604667,39.05719167,68</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>20:50:17 (UTC), 0.9 km/h</name>
+			<description>Total distance traveled: 1 m
+Current altitude: 68 m
+Number of Satellites: 9</description>
+			<styleUrl>#icon1</styleUrl>
+			<Point>
+				<coordinates>-77.44606,39.05719167,68</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>20:50:18 (UTC), 9.1 km/h</name>
+			<description>Total distance traveled: 3 m
+Current altitude: 68 m
+Number of Satellites: 9</description>
+			<styleUrl>#icon1</styleUrl>
+			<Point>
+				<coordinates>-77.44609167,39.05718667,68</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark id="09B7FAEC8D117B6FBC58">
+			<name>20:50:19 (UTC), 26.2 km/h</name>
+			<description>Total distance traveled: 11 m
+Current altitude: 68 m
+Number of Satellites: 9</description>
+			<styleUrl>#icon1</styleUrl>
+			<Point>
+				<coordinates>-77.44618333,39.05719667,68</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>20:50:20 (UTC), 24.4 km/h</name>
+			<description>Total distance traveled: 19 m
+Current altitude: 69 m
+Number of Satellites: 9</description>
+			<styleUrl>#icon1</styleUrl>
+			<Point>
+				<coordinates>-77.446265,39.05721833,69</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark id="0F59D5A7D1117B7CFCD9">
+			<name>20:50:21 (UTC), 23.1 km/h</name>
+			<description>Total distance traveled: 26 m
+Current altitude: 69 m
+Number of Satellites: 9</description>
+			<styleUrl>#icon1</styleUrl>
+			<Point>
+				<coordinates>-77.44632667,39.05726,69</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark id="0FD6167469117B7D100C">
+			<name>20:50:22 (UTC), 21.9 km/h</name>
+			<description>Total distance traveled: 33 m
+Current altitude: 70 m
+Number of Satellites: 9</description>
+			<styleUrl>#icon1</styleUrl>
+			<Point>
+				<coordinates>-77.44640167,39.057275,70</coordinates>
+			</Point>
+		</Placemark>
+	</Folder>
+	<Folder id="149602C008117B6DCF85">
+		<name>line segments</name>
+		<Placemark>
+			<name>line part</name>
+			<styleUrl>#color31</styleUrl>
+			<LineString>
+				<tessellate>1</tessellate>
+				<coordinates>
+					-77.44604667,39.05719167,68 
+				</coordinates>
+			</LineString>
+		</Placemark>
+		<Placemark>
+			<name>line part</name>
+			<styleUrl>#color30</styleUrl>
+			<LineString>
+				<tessellate>1</tessellate>
+				<coordinates>
+					-77.44604667,39.05719167,68 -77.44606,39.05719167,68 
+				</coordinates>
+			</LineString>
+		</Placemark>
+		<Placemark>
+			<name>line part</name>
+			<styleUrl>#color20</styleUrl>
+			<LineString>
+				<tessellate>1</tessellate>
+				<coordinates>
+					-77.44606,39.05719167,68 -77.44609167,39.05718667,68 
+				</coordinates>
+			</LineString>
+		</Placemark>
+		<Placemark>
+			<name>line part</name>
+			<styleUrl>#color0</styleUrl>
+			<LineString>
+				<tessellate>1</tessellate>
+				<coordinates>
+					-77.44609167,39.05718667,68 -77.44618333,39.05719667,68 
+				</coordinates>
+			</LineString>
+		</Placemark>
+		<Placemark>
+			<name>line part</name>
+			<styleUrl>#color2</styleUrl>
+			<LineString>
+				<tessellate>1</tessellate>
+				<coordinates>
+					-77.44618333,39.05719667,68 -77.446265,39.05721833,69 
+				</coordinates>
+			</LineString>
+		</Placemark>
+		<Placemark>
+			<name>line part</name>
+			<styleUrl>#color3</styleUrl>
+			<LineString>
+				<tessellate>1</tessellate>
+				<coordinates>
+					-77.446265,39.05721833,69 -77.44632667,39.05726,69 
+				</coordinates>
+			</LineString>
+		</Placemark>
+		<Placemark>
+			<name>line part</name>
+			<styleUrl>#color5</styleUrl>
+			<LineString>
+				<tessellate>1</tessellate>
+				<coordinates>
+					-77.44632667,39.05726,69 -77.44640167,39.057275,70 
+				</coordinates>
+			</LineString>
+		</Placemark>
+	</Folder>
+</Document>
+</kml>
