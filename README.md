@@ -11,7 +11,7 @@
 ## Getting Started
 If you want to run the code, interact, and play around with the data, you'll want to clone this repo and get python set up on your computer. The installation below walks through setting up Miniconda and the conda environment. If you already have Anaconda installed, you can skip to [Setting up the Environment](#setting-up-the-environment). All the data processing and visualization code is in the`src/` directory. To open the interactive flight report, follow the instructions to install Anaconda and Setting up the Environment. Then open `src/flight_report.ipynb`. All the raw flight data is in the `src/inputData(mm-dd-yy)/` directories.
 
-The code for the Adafruit Feather is in the `Arduino` directory.
+The code for the Adafruit Feather is in the `Arduino` directory. Change the Sketchbook location in the Arduino IDE to the absolute path of that directory.
 
 ## Installing Anaconda
 Installing Anaconda will install python, some popular data science packages, and conda. Conda is a python package and environment manager. It helps manage and isolate packages for your different python projects. You can use it with either Anaconda Prompt (a terminal) or Anaconda Navigator (a GUI).
