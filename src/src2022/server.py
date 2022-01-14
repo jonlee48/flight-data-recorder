@@ -16,115 +16,111 @@ import dash_html_components as html
 import plotly.express as px
 import pandas as pd
 import serial
+import time
 from dash.dependencies import Input, Output, State
 
 # Create a new Dash web app instance
 app = dash.Dash(__name__)
 
-# create an empty dataframe with 3 columns
-df = pd.DataFrame(columns=["count","data"],dtype='float')
+format = [
+    "millis",
+    "count",
+    "linx",
+    "liny",
+    "linz",
+    "rssi",
+]
 
-# Establish a serial connection, port 3 with a 9600 bits/second speed
-#ser = serial.Serial('/dev/cu.usbmodem14301',9600)
-#ser = serial.Serial('COM7 (Adafruit Feather M0)',115200)
-ser = serial.Serial('COM7',115200)
+# store format as key value pairs
+index = {}
+for i, entry in enumerate(format):
+    index[entry] = i
+
+# create an empty dataframe with columns
+df = pd.DataFrame(columns=format,
+                  dtype='float')
+
+# Establish a serial connection
+ser = serial.Serial(port='COM7',
+                    baudrate=115200,
+                    timeout=0)
 
 # Add a row of fake data so we have something to plot
-df.loc[len(df)] = [0,0]
+df.loc[len(df)] = [0,0,0,0,0,0] #TODO: remove this if possible
 
-# create a polar plot
-#fig = px.scatter_polar(df, r="cm", theta="degrees",range_theta=[0,180], start_angle=0, direction="counterclockwise",range_r=[0,100])
-fig = px.line(df, x="count", y="data", title="X acceleration")
-fig.show()
-
-count = 0
+# create a line plot
+fig = px.line(df, x="count", y="linx", title="X acceleration")
 
 # This layout defines the components of the web page
 app.layout = html.Div(children=[
     html.H1(id='header',children='Live Data'),
+    html.H2(id='count', children=''),
 
     html.Div(children='''
-        Data streamed from serial port and plotteed every second.
+        Data streamed from serial port and plotted every second.
     '''),
 
-    # add our polar plot to the page
+    # add our line plot to the page
     dcc.Graph(
-        id='polar-graph',
+        id='line-graph',
         figure=fig
     ),
     # this will trigger a function call to update our data every 1 sec
     dcc.Interval(
         id='interval',
-        interval=500, # in millis
-        n_intervals=0,
-        
+        interval=100, # in millis
     )
 ])
 
-'''
-@app.callback(Output('header', 'children'),
-              Input('interval', 'n_intervals'))
-def test(n):
-    print("testing")
-    return str(n)
+# Stack overflow solution:
+# https://stackoverflow.com/questions/61166544/readline-in-pyserial-sometimes-captures-incomplete-values-being-streamed-from
+def checkPort():
+    time.sleep(.001)                    # delay of 1ms
+    val = ser.readline()                # read complete line from serial output
+    while not '\\n' in str(val):         # check if full data is received.
+        # This loop is entered only if serial read value doesn't contain \n
+        time.sleep(.001)
+        temp = ser.readline()           # check for serial output.
+        if not not temp.decode():       # if temp is not empty.
+            val = (val.decode()+temp.decode()).encode()
+            # required to decode, sum, then encode because
+            # long values might require multiple passes
+    val = val.decode()                  # decoding from bytes
+    val = val.strip()                   # stripping leading and trailing spaces.
+    return val
 
-'''
-# this function is called every second
+#@app.callback(Output('line-graph', 'figure'),
+#              Input('interval', 'n_intervals'),
+#              State('line-graph', 'figure'))
+def test(n, figure):
+    print("printing")
+    print("printing12")
+    return figure
+
+
+# this function is called every interval
 # it takes it n (the nth time it's called) and the current figure
 # returns the updated figure
-@app.callback(Output('polar-graph', 'figure'),
+@app.callback(Output('line-graph', 'figure'),
+              Output('count', 'children'),
               Input('interval', 'n_intervals'),
-              State('polar-graph', 'figure'))
+              State('line-graph', 'figure'))
 def update(n, figure):
-    global count
-    count += 1
-    line = ser.readline().decode('UTF-8')
+    line = checkPort()
+    data = line.split(',')
+
+    print(data[index['count']])
 
 
-    if (count < 20):
-        print("count{} data {}".format(count,line.strip()))
-        return figure
-    
-    line = line.strip()
-    print(line)
-    sep = line.split(',')
-    data = line.strip().split(',')[0]
-    #print(data)
-    df.loc[len(df)] = [count, data]
-    #random = line.strip().split(',')[13]
-    #print(random)
-    print(df)
-    '''
-    #print("updating")
-    # read any data in the serial buffer
-    while(line := ser.readline()):
-        line = line.decode('UTF-8')
-        print(line)
-        line = line.strip()
-        # we use a try, except block to catch any errors when processing the data
-        # in the event that the data is corrupted instead of crashing,
-        # we will clear the serial buffer, print an exception and go on as normal
-        try:
-            sep = line.split(',')
-            data = line.strip().split(',')[0]
-            #print(data)
-            df.loc[len(df)] = [count, data]
-            #random = line.strip().split(',')[13]
-            #print(random)
-            #print(df)
-        except Exception as e:
-            ser.flush()
-            print(e)
-            break
-    '''
+    df.loc[len(df)] = data
+
     # set the figure data to the most current data
     figure['data'][0]['x'] = df['count'].tolist()
-    figure['data'][0]['y'] = df['data'].tolist()
-    
+    figure['data'][0]['y'] = df['linx'].tolist()
 
     # return the figure with the updated data
-    return figure
+    return figure, data[index['count']]
 
 # run the web app
 if __name__ == '__main__':
-    app.run_server(port="9000",debug=True, use_reloader=False)
+    app.run_server(port="7000",debug=True, use_reloader=False)

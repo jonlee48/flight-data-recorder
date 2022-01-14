@@ -3,6 +3,10 @@
 Created on Wed Jan 12 21:41:18 2022
 
 @author: jonathan
+
+scripts:
+groundstation.ino
+fdrv7.ino
 """
 
 import serial
@@ -11,21 +15,18 @@ ser = serial.Serial(port='COM7',
                     baudrate=115200,
                     timeout=0)
 
-print("connected to: " + ser.portstr)
-
+# Stack overflow solution:
+# https://stackoverflow.com/questions/61166544/readline-in-pyserial-sometimes-captures-incomplete-values-being-streamed-from
 def checkPort():
     time.sleep(.001)                    # delay of 1ms
     val = ser.readline()                # read complete line from serial output
-    while not '\\n'in str(val):         # check if full data is received.
+    while not '\\n' in str(val):         # check if full data is received.
         # This loop is entered only if serial read value doesn't contain \n
-        # which indicates end of a sentence.
-        # str(val) - val is byte where string operation to check `\\n`
-        # can't be performed
-        time.sleep(.001)                # delay of 1ms
+        time.sleep(.001)
         temp = ser.readline()           # check for serial output.
         if not not temp.decode():       # if temp is not empty.
             val = (val.decode()+temp.decode()).encode()
-            # requrired to decode, sum, then encode because
+            # required to decode, sum, then encode because
             # long values might require multiple passes
     val = val.decode()                  # decoding from bytes
     val = val.strip()                   # stripping leading and trailing spaces.
