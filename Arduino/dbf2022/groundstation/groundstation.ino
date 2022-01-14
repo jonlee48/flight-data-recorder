@@ -66,14 +66,13 @@ void loop()
   if (rf95.available())
   {
     // Should be a message for us now   
-    uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
+    uint8_t buf[RH_RF95_MAX_MESSAGE_LEN]; // 251 max bytes
     uint8_t len = sizeof(buf);
     
     if (rf95.recv(buf, &len))
     {
       digitalWrite(LED, HIGH);
       //RH_RF95::printBuffer("Received: ", buf, len);
-      //Serial.print("Got: ");
       Serial.print((char*)buf);
       
       //Serial.print("RSSI: ");

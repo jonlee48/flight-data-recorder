@@ -1,11 +1,19 @@
 # flight-data-recorder
 
+## Arduino
+In the Arduino IDE preferences, set the Sketchbook Location to the `/path/to/flight-data-recorder/Arduino` directory. On the Flight Data Recorder (FDR), upload the `Arduino/dbf2022/fdrv7/fdrv7.ino` script. And upload the `Arduino/dbf/2022/groundstation/groundstation.ino` script on the Ground Station.
+
+
 ## Table of Contents
-- [Getting Started](#getting-started)
-- [Installing Anaconda](#installing-anaconda)
-- [Setting up the Environment](#setting-up-the-environment)
-- [Running the Notebook](#running-the-notebook)
-- [Visualizing Data](#)
+- [flight-data-recorder](#flight-data-recorder)
+  - [Arduino](#arduino)
+  - [Table of Contents](#table-of-contents)
+  - [Getting Started](#getting-started)
+  - [Installing Anaconda](#installing-anaconda)
+  - [Setting up the Environment](#setting-up-the-environment)
+    - [Anaconda Prompt:](#anaconda-prompt)
+    - [Anaconda Navigator:](#anaconda-navigator)
+  - [Running the Notebook](#running-the-notebook)
 
 
 ## Getting Started
@@ -64,9 +72,8 @@ conda remove --name myenv --all
 
 ### Anaconda Navigator:
 1. Download and unzip this repository. 
-2. Select Environment, Import. Name it 'fdr', and select the `my_env.yml` from your downloads.
+2. Select Environment, Import. Select `my_env.yml` from this repo and it will autofill a name and location. 
 3. Click Import
-
 
 
 ## Running the Notebook

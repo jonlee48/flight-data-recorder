@@ -1,8 +1,10 @@
-name: fdr
+name: conda_env_dbf
 channels:
   - conda-forge
   - defaults
 dependencies:
+  - dash
+  - pyserial
   - pandas
   - scikit-learn
   - matplotlib

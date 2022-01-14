@@ -11,7 +11,7 @@ Count, System Calibration level (0-3), Linear Acceleration XYZ (m/s^2), Gyro XYZ
 #include <Adafruit_GPS.h>
 
 /* Set the delay between fresh samples */
-#define SAMPLE_RATE (100)
+#define SAMPLE_RATE 100
 // SD:
 #define cardSelect 4      // M0 SD card
 // GPS:
@@ -79,7 +79,7 @@ void setup(void)
   // And send 10 updates per second
   GPS.sendCommand(PMTK_SET_NMEA_UPDATE_10HZ);
 
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.println("Orientation Sensor Raw Data Test"); Serial.println("");
   
   /* Initialise the sensor */
@@ -98,7 +98,6 @@ void setup(void)
   delay(1000);
   bno.setExtCrystalUse(true);
 
-Serial.begin(115200);
 delay(100);
 
 
@@ -155,7 +154,7 @@ void loop(void) {
   //getGPS(); // this needs to be called every loop
   
   /* Display calibration status for each sensor. */
-  bno.getCalibration(&sys, &gyro, &accel, &mag);
+  //bno.getCalibration(&sys, &gyro, &accel, &mag);
   /*
   // turn on green light if imu is calibrated
   if (sys > 0)
@@ -244,56 +243,62 @@ void loop(void) {
 
   }
   */
+  if (millis() >= prev_time + SAMPLE_RATE) {
+    prev_time = millis();
+    
+    // SENDING PACKET OVER RADIO
+    count++;
+    digitalWrite(RECORD_LED, HIGH);
   
-// SENDING PACKET OVER RADIO
-  digitalWrite(RECORD_LED, HIGH);
-
-
-  // Radio packet buffer
-  char radiopacket[200];
-  memset(radiopacket,0,200);
-
-  // Sensor reading buffer
-  char bufWord[100];
-  memset(bufWord,0,100);
   
-  // get data from IMU
-  imu::Vector<3> lin = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
-  imu::Vector<3> rps = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
-  imu::Quaternion quat = bno.getQuat();
-
-  // linear acceleration XYZ (m/s^2)
-  Serial.print("Sending: ");
-  Serial.print(lin.x()); Serial.print(",");   
-  Serial.print(lin.y()); Serial.print(",");
-  Serial.println(lin.z());
+    // Radio packet buffer
+    char radiopacket[200];
+    memset(radiopacket,0,200);
   
-  String linx = String(lin.x());
-  linx.toCharArray(bufWord,100);
-  //strcpy(radiopacket,bufWord);
-  strcat(radiopacket,bufWord);
-
-  String liny= String(lin.y());
-  liny.toCharArray(bufWord,100);
-  strcat(radiopacket,",");
-  strcat(radiopacket,bufWord);
-
-  String linz= String(lin.z());
-  linz.toCharArray(bufWord,100);
-  strcat(radiopacket,",");
-  strcat(radiopacket,bufWord);
-
-//  Serial.print("Actual: ");
-//  Serial.println(radiopacket);
+    // Sensor reading buffer
+    char bufWord[100];
+    memset(bufWord,0,100);
+    
+    // get data from IMU
+    imu::Vector<3> lin = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
+    imu::Vector<3> rps = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
+    imu::Quaternion quat = bno.getQuat();
   
-  // blink
-  digitalWrite(LED, HIGH);
-  rf95.send((uint8_t *)radiopacket, 20); // LIMIT 20 chars
-  delay(10);
-  rf95.waitPacketSent();
-  digitalWrite(LED, LOW);
+    String t = String(millis());
+    t.toCharArray(bufWord,100);
+    strcat(radiopacket,bufWord);
+    strcat(radiopacket,",");
+  
+    String c = String(count);
+    c.toCharArray(bufWord,100);
+    strcat(radiopacket,bufWord);
+    strcat(radiopacket,",");
+  
+    // linear acceleration XYZ (m/s^2)
+    String linx = String(lin.x());
+    linx.toCharArray(bufWord,100);
+    strcat(radiopacket,bufWord);
+    strcat(radiopacket,",");
+  
+    String liny= String(lin.y());
+    liny.toCharArray(bufWord,100);
+    strcat(radiopacket,bufWord);
+    strcat(radiopacket,",");
+  
+    String linz= String(lin.z());
+    linz.toCharArray(bufWord,100);
+    strcat(radiopacket,bufWord);
+  
+    Serial.println(radiopacket);
+    
+    // blink
+    digitalWrite(LED, HIGH);
+    rf95.send((uint8_t *)radiopacket, 30); // LIMIT 30 chars
+    delay(10);
+    rf95.waitPacketSent();
+    digitalWrite(LED, LOW);
+  }
 
-  delay(50);
   /*
   // Now wait for a reply
   uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];

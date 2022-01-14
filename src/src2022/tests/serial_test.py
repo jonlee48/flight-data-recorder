@@ -7,21 +7,21 @@ Created on Wed Jan 12 21:41:18 2022
 
 import serial
 import time
-ser = serial.Serial(port='COM4',
+ser = serial.Serial(port='COM7',
                     baudrate=115200,
                     timeout=0)
 
 print("connected to: " + ser.portstr)
 
-while True:                             # runs this loop forever
+def checkPort():
     time.sleep(.001)                    # delay of 1ms
     val = ser.readline()                # read complete line from serial output
-    while not '\\n'in str(val):         # check if full data is received. 
+    while not '\\n'in str(val):         # check if full data is received.
         # This loop is entered only if serial read value doesn't contain \n
-        # which indicates end of a sentence. 
-        # str(val) - val is byte where string operation to check `\\n` 
+        # which indicates end of a sentence.
+        # str(val) - val is byte where string operation to check `\\n`
         # can't be performed
-        time.sleep(.001)                # delay of 1ms 
+        time.sleep(.001)                # delay of 1ms
         temp = ser.readline()           # check for serial output.
         if not not temp.decode():       # if temp is not empty.
             val = (val.decode()+temp.decode()).encode()
@@ -30,3 +30,8 @@ while True:                             # runs this loop forever
     val = val.decode()                  # decoding from bytes
     val = val.strip()                   # stripping leading and trailing spaces.
     print(val)
+
+while True:                             # runs this loop forever
+    time.sleep(0.1)
+    checkPort()
+
