@@ -32,7 +32,8 @@ def checkPort():
     val = val.strip()                   # stripping leading and trailing spaces.
     print(val)
 
-while True:                             # runs this loop forever
-    time.sleep(0.1)
-    checkPort()
+if __name__ == '__main__':
+    while True:                             # runs this loop forever
+        time.sleep(0.1)
+        checkPort()
 
