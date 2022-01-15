@@ -290,13 +290,13 @@ void loop(void) {
     strcat(radiopacket,bufWord);
   
     Serial.println(radiopacket);
-    
+
     // blink
-    digitalWrite(LED, HIGH);
-    rf95.send((uint8_t *)radiopacket, 30); // LIMIT 30 chars
-    delay(10);
-    rf95.waitPacketSent();
     digitalWrite(LED, LOW);
+    
+    rf95.send((uint8_t *)radiopacket, 30); // LIMIT 30 chars
+    rf95.waitPacketSent();
+
   }
 
   /*

@@ -68,7 +68,7 @@ app.layout = html.Div(children=[
     # this will trigger a function call to update our data every 1 sec
     dcc.Interval(
         id='interval',
-        interval=100, # in millis
+        interval=110, # in millis
     )
 ])
 
@@ -89,15 +89,6 @@ def checkPort():
     val = val.strip()                   # stripping leading and trailing spaces.
     return val
 
-#@app.callback(Output('line-graph', 'figure'),
-#              Input('interval', 'n_intervals'),
-#              State('line-graph', 'figure'))
-def test(n, figure):
-    print("printing")
-    print("printing12")
-    return figure
-
-
 # this function is called every interval
 # it takes it n (the nth time it's called) and the current figure
 # returns the updated figure
@@ -109,7 +100,7 @@ def update(n, figure):
     line = checkPort()
     data = line.split(',')
 
-    print(data[index['count']])
+    print(line)
 
 
     df.loc[len(df)] = data
