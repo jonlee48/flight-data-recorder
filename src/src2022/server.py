@@ -24,18 +24,22 @@ baud = 115200   # baud rate (e.g. 9600 or 115200)
 
 # Data format (of radio packet)
 format = [
-    "millis",
-    "count",
-    "linx",
-    "liny",
-    "linz",
-    "rssi",
+    'millis',
+    'count',
+    'linx',
+    'liny',
+    'linz',
+    'rssi',
 ]
 
 # index format as key value pairs
 index = {}
+# dict format with empty list
+dict = {}
 for i, entry in enumerate(format):
     index[entry] = i
+    dict[entry] = []
+
 
 # dataframe to store packets on the server
 df = pd.DataFrame(columns=format, dtype='float')
@@ -64,7 +68,7 @@ def streamReader(queue):
 queue = queue.Queue()
 
 # Setup stream reader thread
-readerThread = threading.Thread(target=streamReader, args=(queue,), name="streamReader")
+readerThread = threading.Thread(target=streamReader, args=(queue,), name='streamReader')
 
 
 # Establish a serial connection to ground station
@@ -77,7 +81,7 @@ ser = serial.Serial(port=port,
 app = dash.Dash(__name__)
 
 # define a line plot
-fig = px.line(df, x="count", y="linx", title="X acceleration")
+fig = px.line(df, x='count', y='linx', title='X acceleration')
 
 # layout the components of the web page
 app.layout = html.Div(children=[
@@ -93,43 +97,111 @@ app.layout = html.Div(children=[
         id='line-graph',
         figure=fig
     ),
-    # this will trigger a function call to update our data every 1 sec
+    dcc.Store(
+        id='batch-store',
+        data={},
+        storage_type='memory'
+    ),
+    dcc.Store(
+        id='render-queue',
+        data=dict,
+        storage_type='memory'
+    ),
+    # triggers update to batch-store
     dcc.Interval(
-        id='interval',
+        id='batch-interval',
         interval=1000,  # milliseconds
+        n_intervals=0
+    ),
+    # triggers update to line-graph
+    dcc.Interval(
+        id='render-interval',
+        interval=90,  # milliseconds
         n_intervals=0
     )
 ])
 
 # Callback function every interval
 # Returns updated figure
-@app.callback(Output('line-graph', 'figure'),
+@app.callback(Output('batch-store', 'data'),
               Output('count', 'children'),
-              Input('interval', 'n_intervals'),
-              State('line-graph', 'figure'))
-def update(n, figure):
-    # populate figure if first update
-    if n == 0:
-        figure['data'].append({'x': [], 'y': []})
-
-    items = 0
+              Input('batch-interval', 'n_intervals'))
+def batchUpdate(n):
+    batchStart = len(df)
     while not queue.empty():
-        items += 1
         line = queue.get()
         data = line.split(',')
         df.loc[len(df)] = data
 
-    print("Read {} items".format(items))
-    #print(df)
+    batchEnd = len(df)
 
-    # set the figure data to the most current data
-    figure['data'][0]['x'] = df['count'].tolist()
-    figure['data'][0]['y'] = df['linx'].tolist()
+    # prep to send *all* columns
+    batch = df[batchStart:batchEnd]
+    dict = batch.to_dict('list')
 
-    # return the figure with the updated data
-    return figure, str(df['count'].values[-1])
+    print('Batch updating {} items'.format(batchEnd-batchStart))
+    return dict, 'Count: {}'.format(df['count'].values[-1])
+
+
+# appends batch-store to render-queue whenever batch-store is updated
+app.clientside_callback(
+    # Javascript function executed in client browser
+    '''
+    function(batchStore, renderQueue) {
+        // append batchStore to renderQueue
+        keys = Object.keys(batchStore);
+        
+        for (let i = 0; i < batchStore[keys[0]].length; i++) {
+            if (keys[i] in renderQueue) {
+                renderQueue[keys[i]] = renderQueue[keys[i]].concat(batchStore[keys[i]]);
+            }
+            else {
+                renderQueue[keys[i]] = []; 
+            }
+        }
+
+        return renderQueue; 
+    } 
+    ''',
+    Output('render-queue', 'data'),
+    Input('batch-store', 'data'),
+    State('render-queue', 'data')
+)
+
+# takes first item in render_queue and appends it to the line-graph
+# triggered by render-interval
+app.clientside_callback(
+    # Javascript function executed in client browser
+    '''
+    function(n, renderQueue, figure) {
+        console.log(renderQueue['count'].length);
+        // deep copy figure
+        newFig = JSON.parse(JSON.stringify(figure));
+        //console.log(newFig);
+        // populate figure if first update
+        if (newFig['data'].length == 0) {
+            newFig['data'].push({'x': [], 'y': []})
+        }
+        // add datapoint to figure
+        // TODO: parameterize hardcoded count and linx
+        if (renderQueue['linx'].length > 0) {
+            let x = Number(renderQueue['count'].shift());
+            let y = Number(renderQueue['linx'].shift());
+            newFig['data'][0]['x'].push(x);
+            newFig['data'][0]['y'].push(y);
+        }
+        //console.log(figure['data'][0]); 
+        return newFig; 
+    } 
+    ''',
+    Output('line-graph', 'figure'),
+    Input('render-interval', 'n_intervals'),
+    State('render-queue', 'data'),
+    State('line-graph', 'figure')
+)
+
 
 # run the web app
 if __name__ == '__main__':
     readerThread.start()
-    app.run_server(port="7000", debug=True, use_reloader=False)
+    app.run_server(port='7000', debug=True, use_reloader=False)
