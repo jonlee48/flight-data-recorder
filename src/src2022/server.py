@@ -104,7 +104,7 @@ app.layout = html.Div(children=[
 # Callback function every interval
 # Returns updated figure
 @app.callback(Output('line-graph', 'figure'),
-              #Output('count', 'children'),
+              Output('count', 'children'),
               Input('interval', 'n_intervals'),
               State('line-graph', 'figure'))
 def update(n, figure):
@@ -119,18 +119,15 @@ def update(n, figure):
         data = line.split(',')
         df.loc[len(df)] = data
 
-    #print("Read {} items".format(items))
+    print("Read {} items".format(items))
     #print(df)
 
     # set the figure data to the most current data
-    #print(df['count'].tolist())
-    print(figure['data'])
     figure['data'][0]['x'] = df['count'].tolist()
     figure['data'][0]['y'] = df['linx'].tolist()
-    print(figure['data'])
 
     # return the figure with the updated data
-    return figure#, df['count'][-1]
+    return figure, str(df['count'].values[-1])
 
 # run the web app
 if __name__ == '__main__':
