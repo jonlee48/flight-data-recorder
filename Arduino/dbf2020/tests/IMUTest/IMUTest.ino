@@ -5,7 +5,7 @@
 #define BAUDRATE    115200  // serial port baud rate
 #define PERIOD_MS   100      // time between measurements, milliseconds
 
-Adafruit_BNO055 bno = Adafruit_BNO055(1);
+Adafruit_BNO055 bno = Adafruit_BNO055(1,0x29);
 unsigned long tprev;
 
 void setup(void)

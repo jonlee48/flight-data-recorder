@@ -17,13 +17,13 @@
 #define BUILTIN_LED 13 // LED on Arduino, not set to do anything currently
 
 /* Motor Specs */
-#define HALFSTEP    8   // drive mode
-#define MOTOR_PIN1  8   // IN1 on the ULN2003 driver
-#define MOTOR_PIN2  9   // IN2 on the ULN2003 driver
-#define MOTOR_PIN3  10  // IN3 on the ULN2003 driver
-#define MOTOR_PIN4  11  // IN4 on the ULN2003 driver
+#define STEPS       2048  // drive mode
+#define MOTOR_PIN1  8     // IN1 on the ULN2003 driver
+#define MOTOR_PIN2  9     // IN2 on the ULN2003 driver
+#define MOTOR_PIN3  10    // IN3 on the ULN2003 driver
+#define MOTOR_PIN4  11    // IN4 on the ULN2003 driver
 #define ACCEL       100000.0  // set to practically instantaneous accel
-#define MAX_SPEED   1000.0    // just go fast
+#define MAX_SPEED   15.0  // just go fast
 
 /* SMC Parameters (all distances in inches) */
 #define NUM_BOXES     6    // num boxes that start on belt
@@ -36,7 +36,7 @@
 //#define THRESHOLD 1500   // PWM value to trigger deployment when connected to receiver
 
 // have to initialize an AccelStepper otherwise i get a segmentation fault
-AccelStepper stepper1(HALFSTEP, MOTOR_PIN1, MOTOR_PIN3, MOTOR_PIN2, MOTOR_PIN4);
+AccelStepper stepper1(STEPS, MOTOR_PIN1, MOTOR_PIN3, MOTOR_PIN2, MOTOR_PIN4);
 
 /* Global Vars */
 int n = NUM_BOXES;
@@ -88,6 +88,8 @@ void loop(void) {
   //if (pwm_value > threshold && pwm_value < 2000){
 
   if (digitalRead(DEPLOY_PIN) == LOW && n > 0) {
+    Serial.print("deploying box: ");
+    Serial.print(n);
     // always assumes current position is centered
     
     /* Calculate distance occupied by n boxes, and distance to
@@ -100,6 +102,8 @@ void loop(void) {
     // turn motor by deg_to_deploy
     stepper1.move(deg_to_deploy);
     stepper1.runToPosition();
+
+    Serial.println("deploying");
     
     n--;
 
@@ -111,6 +115,8 @@ void loop(void) {
     // turn motor by deg_to_center
     stepper1.move(deg_to_center);
     stepper1.runToPosition();
+
+    Serial.println("returning to position");
     
   }
 

@@ -34,7 +34,7 @@ Adafruit_BMP3XX bmp; // I2C
 void setup() {
   Serial.begin(115200); 
   while (!Serial);
-  //Serial.println("BMP388 test");
+  Serial.println("BMP388 test");
 
   if (!bmp.begin()) {
     Serial.println("Could not find a valid BMP3 sensor, check wiring!");
