@@ -1,96 +1,45 @@
 # flight-data-recorder
 
-## Arduino
-In the Arduino IDE preferences, set the Sketchbook Location to the `/path/to/flight-data-recorder/Arduino` directory. On the Flight Data Recorder (FDR), upload the `Arduino/dbf2022/fdrv7/fdrv7.ino` script. And upload the `Arduino/dbf/2022/groundstation/groundstation.ino` script on the Ground Station.
-
-
 ## Table of Contents
 - [flight-data-recorder](#flight-data-recorder)
-  - [Arduino](#arduino)
   - [Table of Contents](#table-of-contents)
-  - [Getting Started](#getting-started)
-  - [Installing Anaconda](#installing-anaconda)
-  - [Setting up the Environment](#setting-up-the-environment)
-    - [Anaconda Prompt:](#anaconda-prompt)
-    - [Anaconda Navigator:](#anaconda-navigator)
-  - [Running the Notebook](#running-the-notebook)
+  - [About](#about)
+  - [Setup](#setup)
+    - [Arduino](#arduino)
+  - [Data Analysis and Visualization](#data-analysis-and-visualization)
+    - [Anaconda](#anaconda)
+    - [Running the Jupyter Notebooks](#running-the-jupyter-notebooks)
+    - [Running the Web Dashboard](#running-the-web-dashboard)
+  - [Contributing](#contributing)
 
+## About
+The Flight Data Recorder (FDR) is a microcontroller based system designed to collect flight performance metrics for the George Washington University Design Build Fly Club. Data obtained from various onboard sensors (altimeter, pitot tube, IMU, and GPS) is visualized on a real-time Ground Station and analyzed post flight. This information provides valuable feedback for the design team by confirming flight characteristics and identifying areas of improvement for the next design iteration.
 
-## Getting Started
-If you want to run the code, interact, and play around with the data, you'll want to clone this repo and get python set up on your computer. The installation below walks through setting up Miniconda and the conda environment. If you already have Anaconda installed, you can skip to [Setting up the Environment](#setting-up-the-environment). All the data processing and visualization code is in the`src/` directory. To open the interactive flight report, follow the instructions to install Anaconda and Setting up the Environment. Then open `src/flight_report.ipynb`. All the raw flight data is in the `src/inputData(mm-dd-yy)/` directories.
+## Setup
+Download this repository and unzip or run `git clone https://github.com/jonlee48/flight-data-recorder` in the terminal.
 
-The code for the Adafruit Feather is in the `Arduino` directory. Change the Sketchbook location in the Arduino IDE to the absolute path of that directory.
+### Arduino
+To run the Arduino sketches, download the Arduino IDE and set the Sketchbook Location to `/path/to/flight-data-recorder/Arduino`. You will also need to follow the [setup instructions](https://learn.adafruit.com/adafruit-feather-m0-adalogger/setup) for using the Arduino IDE with the Adafruit Feather. 
 
-## Installing Anaconda
-Installing Anaconda will install python, some popular data science packages, and conda. Conda is a python package and environment manager. It helps manage and isolate packages for your different python projects. You can use it with either Anaconda Prompt (a terminal) or Anaconda Navigator (a GUI).
+The FDR and Ground Station share identical hardware, but the software is different. The FDR runs the `Arduino/dbf2022/fdrv7/fdrv7.ino` program. And the Ground Station runs the `Arduino/dbf2022/groundstation/groundstation.ino` program. There are also test scripts in the `Arduino` directory organized by year.
 
-> Note: you can also install Miniconda, which is a lightweight distribution of Anaconda, so it takes up less disk space. [Here](https://towardsdatascience.com/configuring-jupyter-notebook-in-windows-subsystem-linux-wsl2-c757893e9d69) is how to install Miniconda for WSL2 or Linux. Essentially, you'll want to run these commands in terminal.
-> ```
-> cd ~
-> wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-> chmod +x Miniconda3-latest-Linux-x86_64.sh
-> sh Miniconda3-latest-Linux-x86_64.sh
-> rm Miniconda3-latest-Linux-x86_64.sh
-> ```
+## Data Analysis and Visualization
+A live web dashboard is run on a field laptop connected to the Ground Station. The Ground Station continuously receives new data transmitted from the FDR over Long Range (LoRa) radio. The FDR also records a more detailed log on an onboard microSD card which is processed post-flight. 
 
-Install Anaconda from their [website](https://www.anaconda.com/products/individual) for your OS. Follow the default installation instructions. 
+Install Anaconda to run the visualization tools.
 
+### Anaconda
+Anaconda will install python, some popular data science packages, and `conda` the package manager. Conda helps you manage packages and environments for different python projects. Once installed, open Anaconda Navigator and setup a new python environment. Select Environments and Import. Choose `my_env.yml` from this repo as the Specification File. The name and location will autofill, so just click Import.
 
-## Setting up the Environment
-Now, we'll need to setup the packages and dependencies to run the code in an isolated environment. If you're familiar with using the commandline, then use Anaconda Prompt. Otherwise, use Anaconda Navigator with its graphical interface.
+From the Anaconda Navigator you can launch an IDE of your choice (e.g. PyCharm, VSCode, Spyder) or other applications, such as Jupyter Lab/Notebook. The application will run with the selected python environment. You can also manage packages from the Anaconda Navigator. 
 
-### Anaconda Prompt:
-Type `conda env list` to see a list of environments. You should see the `base` environment, the default environment. We're going to make a new one for this project called `fdr`.
-```
-git clone https://github.com/jonlee48/flight-data-recorder.git
-cd flight-data-recorder
-conda deactivate
-conda env create -f my_env.yml
-conda env list
-conda activate fdr
-```
-We have now created a new environment built from the yaml file. You should now see `$(fdr)` to the left of your prompt. This is the name of the environment you just created. It is now active, so any python code executed in that shell will run in the `fdr` environment.
+### Running the Jupyter Notebooks
+Launch JupyterLab from the Anaconda Navigator. Make sure you are running the `conda_env_fdr` environment and not the `base` environment. Once the Jupyter server is running, you can open up the notebooks in the `src` directory. All the notebooks are organized by year. The `src/../flight_report.ipynb` notebook is used to generate a flight report from the logs collected on the microSD card. 
 
-Here are some commands to get setup.
-```
-conda config --set auto_activate_base false
-conda update conda
-conda update --all
-```
+### Running the Web Dashboard
+Launch the IDE of your choice from the Anaconda Navigator (PyCharm, VSCode, and Spyder all work). From the IDE run the `src/src2022/server.py` script or run `python server.py` in the terminal (with environment activated). The dashboard will be served locally at [`127.0.0.1:7000`](127.0.0.1:7000).
 
-Here's a reference of some useful conda commands to keep handy for later. See the [docs](http://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html
-) for more info.
-```
-conda env list
-conda create -n env_name
-conda activate env_name
-conda deactivate
-conda env export > environment.yml
-conda env create -f environment.yml
-conda remove --name myenv --all
-```
+## Contributing
+Minor bug fixes and updates should be committed directly to the main branch. Larger features (like a new widget on the dashboard) should be made in a separate branch. Once you're satisfied with your changes make a pull request and I will merge it into the main branch. This enables me to review your changes first, before it is released into the main codebase.
 
-### Anaconda Navigator:
-1. Download and unzip this repository. 
-2. Select Environment, Import. Select `my_env.yml` from this repo and it will autofill a name and location. 
-3. Click Import
-
-
-## Running the Notebook
-Now it's time to run the notebook.
-
-If you're using Anaconda Prompt:
-```
-jupyter lab --no-browser
-```
-> If there are any issues seeing the plots, you might have to shutdown the notebook and setup interactive widgets.
-> ```
-> jupyter labextension install @jupyter-widgets/jupyterlab-manager
-> jupyter lab build
-> ```
-> There might also be an issue with a blank page loading. Try using a different port or restarting your computer.
-> ```
-> jupyter lab --no-browser --port 9999
-> ```
-
-If you're using Anaconda Navigator, click the environment name and the green run button. Select 'Open with Jupyter Notebook'.
+A list of to do items are found under Projects tab > DBF2022. Any of the cards in the 'To Do' column are fair game (or you can add a card of your own). Pick a card you like and move it to the 'In Progress' column to claim it. 
