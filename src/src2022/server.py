@@ -19,8 +19,10 @@ import time
 import threading
 import queue
 
-port = 'COM7'   # Port of Ground Station, check name in Arduino IDE > Tools > Port
-baud = 115200   # baud rate (e.g. 9600 or 115200)
+PORT = 'COM7'       # Port of Ground Station, check name in Arduino IDE > Tools > Port
+BAUD_RATE = 115200  # baud rate (e.g. 9600 or 115200)
+REFRESH_RATE = 90   # how fast graph updates (milliseconds)
+BATCH_RATE = 1000   # how long to wait to batch packets (milliseconds)
 
 # Data format (of radio packet)
 format = [
@@ -72,8 +74,8 @@ readerThread = threading.Thread(target=streamReader, args=(queue,), name='stream
 
 
 # Establish a serial connection to ground station
-ser = serial.Serial(port=port,
-                    baudrate=baud,
+ser = serial.Serial(port=PORT,
+                    baudrate=BAUD_RATE,
                     timeout=0)
 
 
@@ -110,13 +112,13 @@ app.layout = html.Div(children=[
     # triggers update to batch-store
     dcc.Interval(
         id='batch-interval',
-        interval=1000,  # milliseconds
+        interval=BATCH_RATE,  # milliseconds
         n_intervals=0
     ),
     # triggers update to line-graph
     dcc.Interval(
         id='render-interval',
-        interval=90,  # milliseconds
+        interval=REFRESH_RATE,  # milliseconds
         n_intervals=0
     )
 ])
