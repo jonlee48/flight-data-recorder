@@ -4,7 +4,7 @@ byte fetch_pressure(unsigned int *p_Pressure); //convert value to byte data type
 
 #define TRUE 1
 #define FALSE 0
-#define NUM_AVG 10
+#define NUM_AVG 20
 
 double moving_avg(double last);
 double prev[NUM_AVG];
@@ -72,7 +72,7 @@ void loop()
    //Serial.print("temp:");
    //Serial.println(TR);
    //Serial.print("speed m/s :");
-   Serial.print(VV-7.0,5);
+   Serial.print(VV,5);
    Serial.print(", ");
    Serial.println(avg);
    
@@ -128,5 +128,5 @@ double moving_avg(double last) {
     sum += prev[i];
   }
 
-  return sum/10;
+  return sum/NUM_AVG;
 }
