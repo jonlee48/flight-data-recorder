@@ -3,27 +3,45 @@ Outputs data in csv format with 27 values per line, 12 sensor readings + GPS NME
 Count, System Calibration level (0-3), Linear Acceleration XYZ (m/s^2), Gyro XYZ (radians/sec), Quaternion WXYZ, GPS NMEA GPGGA sentence
 */
 
+/* 
+ * Inline documentation:
+ * BUTTON - used to start & stop recording
+ * GREEN_LED - calibration status (on: good, off: bad)
+ * RED_LED - blinks when sending data/recording
+ */
+
+#include <SD.h> 
+#include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
-#include <SD.h> 
 #include <Adafruit_GPS.h>
+#include <RH_RF95.h>
 
-/* Set the delay between fresh samples */
-#define SAMPLE_RATE 100
-// SD:
-#define cardSelect 4      // M0 SD card
-// GPS:
-#define GPSSerial Serial1
-// Define some I/O buttons and LEDs
-#define BUTTON A5
-#define RECORD_LED 13
-#define STATUS_LED 8
+// Tunable parameters:
+#define SAMPLE_RATE 100   // sample rate in milliseconds
+#define POWER 23          // transmitter power from 5 to 23 dBm (default is 13 dBm)
 
-// Global Vars
-Adafruit_GPS GPS(&GPSSerial);
-Adafruit_BNO055 bno = Adafruit_BNO055(-1, 0x28);
+// Probably never change these:
+#define GPS_SERIAL Serial1// GPS TX/RX
+#define BNO_ADDR 0x29     // IMU I2C address (0x28 or 0x29)
+#define CARD_SELECT 4     // SD card pin
+#define BUTTON A5         // Momentary button
+#define RED_LED 13        // Built-in LED
+#define GREEN_LED 8       // Built-in LED
+#define RFM95_CS A1       // LoRa CS pin
+#define RFM95_RST A3      // LoRa RST pin
+#define RFM95_INT A2      // LoRa INT pin
+#define RF95_FREQ 915.0   // LoRa frequency (MHz)
+
+
+// Create instances of sensor classes
+Adafruit_GPS GPS(&GPS_SERIAL);
+Adafruit_BNO055 bno = Adafruit_BNO055(-1, BNO_ADDR);
+RH_RF95 rf95(RFM95_CS, RFM95_INT);
+
+// Declare global variables
 unsigned long prev_time = 0;
 unsigned long count = -1;
 File logfile;
@@ -36,102 +54,91 @@ boolean record = false;
 unsigned long record_last = 0;
 const int debounce = 1500;
 
+int16_t packetnum = 0;  // packet counter, we increment per transmission
 
-#include <SPI.h>
-#include <RH_RF95.h>
 
-#define RFM95_CS A1
-#define RFM95_RST A3
-#define RFM95_INT A2
-
-// Change to 434.0 or other frequency, must match RX's freq!
-#define RF95_FREQ 915.0
-
-// Blinky on receipt
-#define LED 13
-
-// Singleton instance of the radio driver
-RH_RF95 rf95(RFM95_CS, RFM95_INT);
-
-/**************************************************************************/
-/*
-    Arduino setup function (automatically called at startup)
-    Use millis() instead of delay() to account for write and execution times
-*/
-/**************************************************************************/
 void setup(void)
 {
-  pinMode(STATUS_LED, OUTPUT); // green onboard LED lit if calibrated
-  pinMode(RECORD_LED, OUTPUT); // blue LED lit when recording
-  pinMode(BUTTON, INPUT_PULLUP); // button to start/stop record
-
-  //Transmitter
-  pinMode(LED, OUTPUT);
+  pinMode(GREEN_LED, OUTPUT);
+  pinMode(RED_LED, OUTPUT);
+  pinMode(BUTTON, INPUT_PULLUP);
   pinMode(RFM95_RST, OUTPUT);
+  
   digitalWrite(RFM95_RST, HIGH);
+  digitalWrite(GREEN_LED, LOW);
+  digitalWrite(RED_LED, LOW);
 
-  digitalWrite(RECORD_LED, LOW);
+  Serial.begin(115200);
+  delay(500);
+  Serial.println("Hello???");
 
-  // GPS SETUP ************************************************************/
-  GPSSerial.begin(9600);  // default rate for the Ultimate GPS
-  // Tell GPS to output only GGA NMEA sentences
+  // GPS SETUP
+  GPS_SERIAL.begin(9600);
+  // Output only GGA NMEA sentences
   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_GGAONLY);
   // And send 10 updates per second
   GPS.sendCommand(PMTK_SET_NMEA_UPDATE_10HZ);
 
-  Serial.begin(115200);
-  Serial.println("Orientation Sensor Raw Data Test"); Serial.println("");
-  
-  /* Initialise the sensor */
+
+  // BNO SETUP
   if(!bno.begin())
   {
-    /* There was a problem detecting the BNO055 ... check your connections */
-    Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
-    while(1);
+    Serial.print("No BNO055 detected ... Check your wiring or I2C ADDR!");
+    while(1) {
+      blinkError();
+    }
   }
-
-  // SD SETUP ************************************************************/
-  // see if the card is present and can be initialized:
-  if (!SD.begin(cardSelect)) {
-    Serial.println("Card init. failed!");
-  }
-  delay(1000);
   bno.setExtCrystalUse(true);
 
-delay(100);
+
+  // SD SETUP
+  // see if the card is present and can be initialized:
+  if (!SD.begin(CARD_SELECT)) {
+    Serial.println("Card init. failed!");
+    while(1) {
+      blinkError();
+    }
+  }
 
 
-Serial.println("Arduino LoRa TX Test!");
-
-  // manual reset
+  // LoRa SETUP
   digitalWrite(RFM95_RST, LOW);
   delay(10);
   digitalWrite(RFM95_RST, HIGH);
   delay(10);
 
-  while (!rf95.init()) {
+  if (!rf95.init()) {
     Serial.println("LoRa radio init failed");
-    while (1);
+    while(1) {
+      blinkError();
+    }
   }
-  Serial.println("LoRa radio init OK!");
 
-  // Defaults after init are 434.0MHz, modulation GFSK_Rb250Fd250, +13dbM
-  if (!rf95.setFrequency(RF95_FREQ)) {
-    Serial.println("setFrequency failed");
-    while (1);
-  }
-  Serial.print("Set Freq to: "); Serial.println(RF95_FREQ);
-  
-  // Defaults after init are 434.0MHz, 13dBm, Bw = 125 kHz, Cr = 4/5, Sf = 128chips/symbol, CRC on
+  rf95.setFrequency(RF95_FREQ);
+  rf95.setTxPower(POWER, false);
 
-  // The default transmitter power is 13dBm, using PA_BOOST.
-  // If you are using RFM95/96/97/98 modules which uses the PA_BOOST transmitter pin, then 
-  // you can set transmitter powers from 5 to 23 dBm:
-  rf95.setTxPower(23, false);
-  
+
+  // Setup completed successfully
+  digitalWrite(GREEN_LED, HIGH);
 }
-int16_t packetnum = 0;  // packet counter, we increment per xmission
 
+
+/* 
+ *  Blink green led to signify error
+ * Setup failed
+ */
+void blinkError() {
+  int rate = 100;
+  digitalWrite(GREEN_LED, HIGH);
+  delay(rate);
+  digitalWrite(GREEN_LED, LOW);
+  delay(rate);
+}
+
+
+/* 
+ * Get GPS string
+ */
 void getGPS() {
   char c = GPS.read();
   if (GPS.newNMEAreceived()) {
@@ -142,12 +149,8 @@ void getGPS() {
   }
 }
 
-/**************************************************************************/
-/*
-    Arduino loop function, called once 'setup' is complete (your own code
-    should go here)
-*/
-/**************************************************************************/
+
+
 
 void loop(void) {
   
@@ -158,9 +161,9 @@ void loop(void) {
   /*
   // turn on green light if imu is calibrated
   if (sys > 0)
-    digitalWrite(STATUS_LED, HIGH);
+    digitalWrite(GREEN_LED, HIGH);
   else
-    digitalWrite(STATUS_LED, LOW);
+    digitalWrite(GREEN_LED, LOW);
 
   
   // if new record button is pressed
@@ -248,7 +251,7 @@ void loop(void) {
     
     // SENDING PACKET OVER RADIO
     count++;
-    digitalWrite(RECORD_LED, HIGH);
+    digitalWrite(RED_LED, HIGH);
   
   
     // Radio packet buffer
@@ -292,7 +295,7 @@ void loop(void) {
     Serial.println(radiopacket);
 
     // blink
-    digitalWrite(LED, LOW);
+    digitalWrite(RED_LED, LOW);
     
     rf95.send((uint8_t *)radiopacket, 30); // LIMIT 30 chars
     rf95.waitPacketSent();
@@ -324,7 +327,7 @@ void loop(void) {
   {
     Serial.println("No reply, is there a listener around?");
   }
-  digitalWrite(RECORD_LED, LOW);
+  digitalWrite(RED_LED, LOW);
   */
  
 }
