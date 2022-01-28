@@ -1,38 +1,38 @@
-// Arduino9x_RX
-// -*- mode: C++ -*-
-// Example sketch showing how to create a simple messaging client (receiver)
-// with the RH_RF95 class. RH_RF95 class does not provide for addressing or
-// reliability, so you should only use RH_RF95 if you do not need the higher
-// level messaging abilities.
-// It is designed to work with the other example Arduino9x_TX
-
 #include <SPI.h>
 #include <RH_RF95.h>
 
-#define RFM95_CS A1
-#define RFM95_RST A3
-#define RFM95_INT A2
+// Tunable parameters:
+#define POWER 23          // transmitter power from 5 to 23 dBm (default is 13 dBm)
 
-// Change to 434.0 or other frequency, must match RX's freq!
-#define RF95_FREQ 915.0
 
-// Singleton instance of the radio driver
+// Probably never change these:
+#define BUTTON A5         // Momentary button
+#define DEBOUNCE 1500     // Milliseconds between registering presses
+#define RED_LED 13        // Built-in LED
+#define GREEN_LED 8       // Built-in LED
+#define RFM95_CS A1       // LoRa CS pin
+#define RFM95_RST A3      // LoRa RST pin
+#define RFM95_INT A2      // LoRa INT pin
+#define RF95_FREQ 915.0   // LoRa frequency (MHz)
+
+// Instance of the radio driver
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
 
-// Blinky on receipt
-#define LED 13
+// Global variables (initialized to 0)
+unsigned long prev_press;       // Time in millis of last button press
+
 
 void setup() 
 {
-  pinMode(LED, OUTPUT);     
+  pinMode(GREEN_LED, OUTPUT);
+  pinMode(RED_LED, OUTPUT);
+  pinMode(BUTTON, INPUT_PULLUP);  
   pinMode(RFM95_RST, OUTPUT);
   digitalWrite(RFM95_RST, HIGH);
 
-  //while (!Serial);
   Serial.begin(115200);
-  delay(50);
-
-  //Serial.println("Arduino LoRa RX Test!");
+  //while (!Serial);
+  delay(500);
   
   // manual reset
   digitalWrite(RFM95_RST, LOW);
@@ -44,21 +44,9 @@ void setup()
     Serial.println("LoRa radio init failed");
     while (1);
   }
-  //Serial.println("LoRa radio init OK!");
 
-  // Defaults after init are 434.0MHz, modulation GFSK_Rb250Fd250, +13dbM
-  if (!rf95.setFrequency(RF95_FREQ)) {
-    Serial.println("setFrequency failed");
-    while (1);
-  }
-  //Serial.print("Set Freq to: "); Serial.println(RF95_FREQ);
-
-  // Defaults after init are 434.0MHz, 13dBm, Bw = 125 kHz, Cr = 4/5, Sf = 128chips/symbol, CRC on
-
-  // The default transmitter power is 13dBm, using PA_BOOST.
-  // If you are using RFM95/96/97/98 modules which uses the PA_BOOST transmitter pin, then 
-  // you can set transmitter powers from 5 to 23 dBm:
-  rf95.setTxPower(23, false);
+  rf95.setFrequency(RF95_FREQ);
+  rf95.setTxPower(POWER, false);
 }
 
 void loop()
@@ -66,32 +54,28 @@ void loop()
   if (rf95.available())
   {
     // Should be a message for us now   
-    uint8_t buf[RH_RF95_MAX_MESSAGE_LEN]; // 251 max bytes
+    uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];  // 251 bytes
     uint8_t len = sizeof(buf);
     
     if (rf95.recv(buf, &len))
     {
-      digitalWrite(LED, HIGH);
-      //RH_RF95::printBuffer("Received: ", buf, len);
+      digitalWrite(RED_LED, HIGH);
       Serial.print((char*)buf);
       
-      //Serial.print("RSSI: ");
       Serial.print(",");
+      // SAVE A LOG OF RSSI
       Serial.println(rf95.lastRssi(), DEC);
       
-      // Send a reply
-      /*
-      uint8_t data[] = "And hello back to you";
-      rf95.send(data, sizeof(data));
-      rf95.waitPacketSent();
-      Serial.println("Sent a reply");
-      */
       delay(10);
-      digitalWrite(LED, LOW);
+      digitalWrite(RED_LED, LOW);
     }
-    else
-    {
-      Serial.println("Receive failed");
-    }
+  }
+  // check if record button is pressed
+  if (digitalRead(BUTTON) == LOW && millis() >= prev_press + DEBOUNCE) {
+    prev_press = millis();
+    
+    uint8_t data[] = "RECORD";
+    rf95.send(data, sizeof(data));
+    rf95.waitPacketSent();
   }
 }

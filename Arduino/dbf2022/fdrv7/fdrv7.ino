@@ -21,17 +21,17 @@ Count, System Calibration level (0-3), Linear Acceleration XYZ (m/s^2), Gyro XYZ
 #include <RH_RF95.h>
 
 // Tunable parameters:
-#define SAMPLE_RATE 100   // sample rate in milliseconds
+#define SAMPLE_RATE 100    // sample rate in milliseconds
 #define POWER 23          // transmitter power from 5 to 23 dBm (default is 13 dBm)
 
 // Probably never change these:
 #define GPS_SERIAL Serial1// GPS TX/RX
 #define BNO_ADDR 0x29     // IMU I2C address
 #define PITOT_ADDR 0x28   // MS4525 sensor I2C address
-
+#define PACKET_SIZE RH_RF95_MAX_MESSAGE_LEN  // Max radio packet size (251 bytes)
 #define CARD_SELECT 4     // SD card pin
 #define BUTTON A5         // Momentary button
-#define DEBOUNCE 1000     // Milliseconds between registering presses
+#define DEBOUNCE 1500     // Milliseconds between registering presses
 #define RED_LED 13        // Built-in LED
 #define GREEN_LED 8       // Built-in LED
 #define RFM95_CS A1       // LoRa CS pin
@@ -66,7 +66,6 @@ uint8_t gyro;                   // IMU gyroscope status [0-3]
 uint8_t accel;                  // IMU accelerometer status [0-3]
 uint8_t mag;                    // IMU magnetometer status [0-3]
 boolean record;                 // Record data - state changed by button
-
 
 
 void setup(void)
@@ -159,15 +158,7 @@ void loop(void) {
     record = !record;  // toggle state
     
     if (record) {
-      count = 0;
-      // create new FLIGHTXX.TXT
-      for (uint8_t i = 0; i < 100; i++) {
-        fname[7] = '0' + i/10;
-        fname[8] = '0' + i%10;
-        if (!SD.exists(fname)) {
-          break;
-        }
-      }
+      start_record();
     }
   }
 
@@ -208,7 +199,8 @@ void loop(void) {
 
     // print data from all sensors to Serial and logfile
     logfile = SD.open(fname, FILE_WRITE);
-
+    
+    sensorPrintULo(prev_sample, logfile);
     sensorPrintULo(count, logfile);
     sensorPrintInt(sys, logfile);
     sensorPrintInt(p_stat, logfile);
@@ -240,52 +232,67 @@ void loop(void) {
   
   
     // Radio packet buffer
-    char radiopacket[200];
-    memset(radiopacket,0,200);
-  
-    // Sensor reading buffer
-    char bufWord[100];
-    memset(bufWord,0,100);
-   
-  
-    String t = String(millis());
-    t.toCharArray(bufWord,100);
-    strcat(radiopacket,bufWord);
-    strcat(radiopacket,",");
-  
-    String c = String(count);
-    c.toCharArray(bufWord,100);
-    strcat(radiopacket,bufWord);
-    strcat(radiopacket,",");
-  
-    // linear acceleration XYZ (m/s^2)
-    String linx = String(lin.x());
-    linx.toCharArray(bufWord,100);
-    strcat(radiopacket,bufWord);
-    strcat(radiopacket,",");
-  
-    String liny= String(lin.y());
-    liny.toCharArray(bufWord,100);
-    strcat(radiopacket,bufWord);
-    strcat(radiopacket,",");
-  
-    String linz= String(lin.z());
-    linz.toCharArray(bufWord,100);
-    strcat(radiopacket,bufWord);
+    char radiopacket[PACKET_SIZE];
+    memset(radiopacket,0,PACKET_SIZE);
+ 
+    sprintf(radiopacket, "%d,%d,%.2f,%.2f,%.2f", 
+      prev_sample,
+      count,
+      lin.x(),
+      lin.y(),
+      lin.z()
+    );
+      
   
     Serial.println(radiopacket);
+    Serial.println(strlen(radiopacket));
 
     // blink
     digitalWrite(RED_LED, LOW);
+
+    int len = min(strlen(radiopacket), PACKET_SIZE);
     
-    rf95.send((uint8_t *)radiopacket, 30); // LIMIT 30 chars
+    rf95.send((uint8_t *)radiopacket, strlen(radiopacket));
     rf95.waitPacketSent();
 
 
     // update counter
     count++;
   }
+
+
+  // Allow ground station to start recording
+  if (!record) {
+    uint8_t buf[20];
+    uint8_t len = sizeof(buf);
+    if (rf95.waitAvailableTimeout(1000)) { 
+      // Should be a reply message for us now   
+      if (rf95.recv(buf, &len)) {
+        if (strcmp((char*)buf, "RECORD") == 0) {
+          record = true;
+          start_record();
+        }
+      }
+    }
+  }
   
+  
+}
+
+
+/*
+ * Creates new log and resets count
+ */
+void start_record() {
+  count = 0;
+  // create new FLIGHTXX.TXT
+  for (uint8_t i = 0; i < 100; i++) {
+    fname[7] = '0' + i/10;
+    fname[8] = '0' + i%10;
+    if (!SD.exists(fname)) {
+      break;
+    }
+  }
 }
 
 
