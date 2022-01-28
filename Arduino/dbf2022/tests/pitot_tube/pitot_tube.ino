@@ -17,7 +17,6 @@
  * https://github.com/PX4/PX4-Autopilot/blob/master/src/drivers/differential_pressure/ms4525/ms4525_airspeed.cpp
  */
 #include <Wire.h>   //I2C library 0x28H 
-byte fetch_pressure(unsigned int *p_Pressure); //convert value to byte data type
 
 #define NUM_AVG 20  // how many of the last data points are in the moving average
 
@@ -38,7 +37,7 @@ void setup(void)
 
 void loop()
 {
-  byte _status;
+  int _status;
   unsigned int P_dat;
   unsigned int T_dat;
   double PR;
@@ -82,9 +81,9 @@ void loop()
    //Serial.println(P_dat,BIN);
    //Serial.print("raw counts:");
    //Serial.print(P_dat);
-   Serial.print("pressure psi:");
-   Serial.print(PR,10);
-   Serial.print(" ");
+   //Serial.print("pressure psi:");
+   //Serial.print(PR,10);
+   //Serial.print(" ");
    //Serial.print("raw Temp:");
    //Serial.println(T_dat);
    //Serial.print("temp:");
@@ -99,38 +98,36 @@ void loop()
   }
 }
 
-// fetch_pressure returns sensor status and updates P_dat and T_dat
-byte fetch_pressure(unsigned int *p_P_dat, unsigned int *p_T_dat)
+/*
+ * Returns sensor status and updates p_pres and p_temp
+ */
+int fetch_pitot(unsigned int *p_pres, unsigned int *p_temp)
 {
-
-
-  byte address, Press_H, Press_L, _status;
-  unsigned int P_dat;
-  unsigned int T_dat;
-
-  address = 0x28;  // I2C address of MS4525 sensor
-  Wire.beginTransmission(address);
+  Wire.beginTransmission(PITOT_ADDR);
   Wire.endTransmission();
-  delay(10); // <-- CAN WE REDUCE THIS DELAY?
-
-  Wire.requestFrom((int)address, (int) 4);//Request 4 bytes need 4 bytes are read
-  Press_H = Wire.read();
-  Press_L = Wire.read();
+  delay(10);
+  
+  // Request 4 bytes = status (2 bits) + pressure (14 bits) + temp (11 bits) + 5 extra bits
+  Wire.requestFrom((int)PITOT_ADDR, (int)4);  
+  byte Press_H = Wire.read();
+  byte Press_L = Wire.read();
   byte Temp_H = Wire.read();
-  byte  Temp_L = Wire.read();
+  byte Temp_L = Wire.read();
   Wire.endTransmission();
 
 
-  // Math to obtain data from 14 bit string
-  _status = (Press_H >> 6) & 0x03;
-  Press_H = Press_H & 0x3f;
-  P_dat = (((unsigned int)Press_H) << 8) | Press_L;
-  *p_P_dat = P_dat;
+  // Get status from 2 leftmost bits of Press_H
+  byte _status = (Press_H >> 6) & 0x03;
 
+  // Get 14 bit pressure from H & L bytes
+  Press_H = Press_H & 0x3f;
+  *p_pres = (((unsigned int)Press_H) << 8) | Press_L;
+
+  // Get 11 bit temp from H & L bytes
   Temp_L = (Temp_L >> 5);
-  T_dat = (((unsigned int)Temp_H) << 3) | Temp_L;
-  *p_T_dat = T_dat;
-  return (_status);
+  *p_temp = (((unsigned int)Temp_H) << 3) | Temp_L;
+
+  return (int)_status;
 }
 
 // update the moving average by adding a new data point to it
