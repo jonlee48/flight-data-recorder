@@ -19,18 +19,21 @@ import time
 import threading
 import queue
 
-PORT = 'COM7'       # Port of Ground Station, check name in Arduino IDE > Tools > Port
+PORT = 'COM9'       # Port of Ground Station, check name in Arduino IDE > Tools > Port
 BAUD_RATE = 115200  # baud rate (e.g. 9600 or 115200)
-REFRESH_RATE = 90   # how fast graph updates (milliseconds)
+REFRESH_RATE = 10   # how fast graph updates (milliseconds)
 BATCH_RATE = 1000   # how long to wait to batch packets (milliseconds)
+
 
 # Data format (of radio packet)
 format = [
-    'millis',
     'count',
-    'linx',
-    'liny',
-    'linz',
+    'millis',
+    'airspeed',
+    'altitude',
+    'pitch',
+    'roll',
+    'xaccel',
     'rssi',
 ]
 
@@ -83,16 +86,19 @@ ser = serial.Serial(port=PORT,
 app = dash.Dash(__name__)
 
 # define a line plot
-fig = px.line(df, x='count', y='linx', title='X acceleration')
+fig = px.line(df, x='count', y='pitch', title='Live Data')
+
 
 # layout the components of the web page
 app.layout = html.Div(children=[
-    html.H1(id='header', children='Live Data'),
     html.H2(id='count', children=''),
-
-    html.Div(children='''
-        Data streamed from serial port and plotted every second.
-    '''),
+    html.H2(id='millis', children=''),
+    html.H2(id='airspeed', children=''),
+    html.H2(id='altitude', children=''),
+    html.H2(id='pitch', children=''),
+    html.H2(id='roll', children=''),
+    html.H2(id='xaccel', children=''),
+    html.H2(id='rssi', children=''),
 
     # add our line plot to the page
     dcc.Graph(
@@ -123,16 +129,25 @@ app.layout = html.Div(children=[
     )
 ])
 
+
 # Callback function every interval
 # Returns updated figure
 @app.callback(Output('batch-store', 'data'),
               Output('count', 'children'),
+              Output('millis', 'children'),
+              Output('airspeed', 'children'),
+              Output('altitude', 'children'),
+              Output('pitch', 'children'),
+              Output('roll', 'children'),
+              Output('xaccel', 'children'),
+              Output('rssi', 'children'),
               Input('batch-interval', 'n_intervals'))
 def batchUpdate(n):
     batchStart = len(df)
     while not queue.empty():
         line = queue.get()
         data = line.split(',')
+        print(data)
         df.loc[len(df)] = data
 
     batchEnd = len(df)
@@ -142,7 +157,16 @@ def batchUpdate(n):
     dict = batch.to_dict('list')
 
     print('Batch updating {} items'.format(batchEnd-batchStart))
-    return dict, 'Count: {}'.format(df['count'].values[-1])
+
+    count = 'Count: {}'.format(df['count'].values[-1])
+    millis = 'Millis: {}'.format(df['millis'].values[-1])
+    airspeed = 'Airspeed: {} m/s'.format(df['airspeed'].values[-1])
+    altitude = 'Altitude: {} m'.format(df['altitude'].values[-1])
+    pitch = 'Pitch: {} deg'.format(df['pitch'].values[-1])
+    roll = 'Roll: {} deg'.format(df['roll'].values[-1])
+    xaccel = 'Xaccel: {} m/s^2'.format(df['xaccel'].values[-1])
+    rssi = 'Rssi: {}'.format(df['rssi'].values[-1])
+    return dict, count, millis, airspeed, altitude, pitch, roll, xaccel, rssi
 
 
 # appends batch-store to render-queue whenever batch-store is updated
@@ -185,10 +209,10 @@ app.clientside_callback(
             newFig['data'].push({'x': [], 'y': []})
         }
         // add datapoint to figure
-        // TODO: parameterize hardcoded count and linx
-        if (renderQueue['linx'].length > 0) {
+        // TODO: parameterize hardcoded count and pitch 
+        if (renderQueue['pitch'].length > 0) {
             let x = Number(renderQueue['count'].shift());
-            let y = Number(renderQueue['linx'].shift());
+            let y = Number(renderQueue['pitch'].shift());
             newFig['data'][0]['x'].push(x);
             newFig['data'][0]['y'].push(y);
         }

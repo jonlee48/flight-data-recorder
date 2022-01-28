@@ -21,8 +21,10 @@ Count, System Calibration level (0-3), Linear Acceleration XYZ (m/s^2), Gyro XYZ
 #include <RH_RF95.h>
 
 // Tunable parameters:
-#define SAMPLE_RATE 100    // sample rate in milliseconds
+#define SAMPLE_RATE 100   // sample rate in milliseconds
+#define SEALEVELPRESSURE_HPA 1026.753  // Depends on weather. Default is 1013.25
 #define POWER 23          // transmitter power from 5 to 23 dBm (default is 13 dBm)
+#define NUM_AVG 20        // how many data points are in the pitot tube moving average
 
 // Probably never change these:
 #define GPS_SERIAL Serial1// GPS TX/RX
@@ -55,9 +57,12 @@ unsigned int p_pres;            // Pitot tube raw pressure
 unsigned int p_temp;            // Pitot tube raw temp
 double p_psi;                   // Pitot tube pressure (psi)
 double p_vel;                   // Pitot tube velocity
+double p_avg;                   // Pitot tube average velocity (avg of last X data points)
 double p_cel;                   // Pitot tube temp (*C)
 int p_stat;                     // Pitot tube status 0: good 1, 2: error
-
+double avg[NUM_AVG];            // Pitot tube velocity moving average
+double b_pres;                  // Altimeter pressure (hPa)
+double b_alt;                   // Altimeter meters above sea level
 File logfile;                   // File object to store open file
 char fname[] = "/FLIGHT00.TXT"; // Filename, chars 7,8 are incremented
 String GPSstr = "\n";           // GPS NMEA formatted string
@@ -172,7 +177,9 @@ void loop(void) {
     bno.getCalibration(&sys, &gyro, &accel, &mag);
     imu::Vector<3> lin = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
     imu::Vector<3> rps = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
+    imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
     imu::Quaternion quat = bno.getQuat();
+    
     bmp.performReading();
     p_stat = fetch_pitot(&p_pres, &p_temp);
 
@@ -187,7 +194,12 @@ void loop(void) {
     p_cel = (double)(p_temp * 0.09770395701);
     p_cel = p_cel - 50;
 
-    
+    p_avg = moving_avg(p_vel);
+
+    // altimeter
+    b_pres = bmp.pressure / 100.0;
+    b_alt = bmp.readAltitude(SEALEVELPRESSURE_HPA);
+
     // turn on green light if IMU is calibrated
     if (sys > 0) {
       digitalWrite(GREEN_LED, HIGH);
@@ -215,12 +227,16 @@ void loop(void) {
     sensorPrintDou(rps.x(), 3, logfile);
     sensorPrintDou(rps.y(), 3, logfile);
     sensorPrintDou(rps.z(), 3, logfile);
+    sensorPrintDou(euler.x(), 3, logfile);
+    sensorPrintDou(euler.y(), 3, logfile);
+    sensorPrintDou(euler.z(), 3, logfile);
     sensorPrintDou(quat.w(), 3, logfile);
     sensorPrintDou(quat.x(), 3, logfile);
     sensorPrintDou(quat.y(), 3, logfile);
     sensorPrintDou(quat.z(), 3, logfile);
     sensorPrintDou(bmp.temperature, 3, logfile);
-    sensorPrintDou(bmp.pressure, 3, logfile);
+    sensorPrintDou(b_pres, 3, logfile);
+    sensorPrintDou(b_alt, 3, logfile);
     sensorPrintStr(GPSstr, logfile);
 
     logfile.close();
@@ -234,13 +250,25 @@ void loop(void) {
     // Radio packet buffer
     char radiopacket[PACKET_SIZE];
     memset(radiopacket,0,PACKET_SIZE);
- 
-    sprintf(radiopacket, "%d,%d,%.2f,%.2f,%.2f", 
-      prev_sample,
+
+    /* PACKET CONTENTS:
+     * COUNT
+     * PREV_SAMPLE
+     * AIRSPEED (moving average)
+     * ALTITUDE
+     * PITCH
+     * ROLL
+     * LINX
+     * RSSI
+     */
+    sprintf(radiopacket, "%d,%d,%.2f,%.2f,%.2f,%.2f,%.2f,", 
       count,
-      lin.x(),
-      lin.y(),
-      lin.z()
+      prev_sample,
+      p_avg,
+      b_alt,
+      euler.y(),
+      euler.z(),
+      lin.x()
     );
       
   
@@ -328,6 +356,23 @@ int fetch_pitot(unsigned int *p_pres, unsigned int *p_temp)
   return (int)_status;
 }
 
+/*
+ * return new moving average by adding a data point to it
+ */
+double moving_avg(double last) {
+
+  for (int i = NUM_AVG - 1; i > 0; i--) {
+    avg[i] = avg[i-1];
+  }
+  avg[0] = last;
+
+  double sum = 0.0;
+  for (int i = 0; i < NUM_AVG; i++) {
+    sum += avg[i];
+  }
+
+  return sum/NUM_AVG;
+}
 
 /* 
  * Update GPSstr

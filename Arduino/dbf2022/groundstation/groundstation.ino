@@ -60,11 +60,17 @@ void loop()
     if (rf95.recv(buf, &len))
     {
       digitalWrite(RED_LED, HIGH);
-      Serial.print((char*)buf);
-      
-      Serial.print(",");
-      // SAVE A LOG OF RSSI
-      Serial.println(rf95.lastRssi(), DEC);
+      //Serial.print((char*)buf);
+      String data = String((char*)buf);
+      data.trim();
+      data += rf95.lastRssi();
+      Serial.println(data);
+
+      // SAVE A LOG OF MILLIS, RSSI, & EVENTS
+      //Serial.println(rf95.lastRssi(), DEC);
+
+      //Serial.println(strlen((char*)buf));
+      memset(buf,0,len);
       
       delay(10);
       digitalWrite(RED_LED, LOW);
