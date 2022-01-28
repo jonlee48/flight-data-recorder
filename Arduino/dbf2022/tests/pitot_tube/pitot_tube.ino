@@ -82,9 +82,9 @@ void loop()
    //Serial.println(P_dat,BIN);
    //Serial.print("raw counts:");
    //Serial.print(P_dat);
-   //Serial.print("pressure psi:");
-   //Serial.print(PR,10);
-   //Serial.print(" ");
+   Serial.print("pressure psi:");
+   Serial.print(PR,10);
+   Serial.print(" ");
    //Serial.print("raw Temp:");
    //Serial.println(T_dat);
    //Serial.print("temp:");
@@ -111,7 +111,7 @@ byte fetch_pressure(unsigned int *p_P_dat, unsigned int *p_T_dat)
   address = 0x28;  // I2C address of MS4525 sensor
   Wire.beginTransmission(address);
   Wire.endTransmission();
-  delay(100); // <-- CAN WE REDUCE THIS DELAY?
+  delay(10); // <-- CAN WE REDUCE THIS DELAY?
 
   Wire.requestFrom((int)address, (int) 4);//Request 4 bytes need 4 bytes are read
   Press_H = Wire.read();

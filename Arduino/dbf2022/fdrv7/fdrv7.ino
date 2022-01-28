@@ -26,7 +26,9 @@ Count, System Calibration level (0-3), Linear Acceleration XYZ (m/s^2), Gyro XYZ
 
 // Probably never change these:
 #define GPS_SERIAL Serial1// GPS TX/RX
-#define BNO_ADDR 0x29     // IMU I2C address (0x28 or 0x29)
+#define BNO_ADDR 0x29     // IMU I2C address
+#define PITOT_ADDR 0x28   // MS4525 sensor I2C address
+
 #define CARD_SELECT 4     // SD card pin
 #define BUTTON A5         // Momentary button
 #define DEBOUNCE 1000     // Milliseconds between registering presses
@@ -44,17 +46,27 @@ Adafruit_BNO055 bno = Adafruit_BNO055(-1, BNO_ADDR);  // IMU
 Adafruit_BMP3XX bmp;                                  // Altimeter
 RH_RF95 rf95(RFM95_CS, RFM95_INT);                    // LoRa
 
-// Declare global variables
-unsigned long prev_time, count;
-File logfile;
-char filename[15];
-String GPSstr;
-uint8_t sys, gyro, accel, mag;
+// Global variables (initialized to 0)
+unsigned long prev_sample;      // Time in millis of last sample
+unsigned long count;            // Sample counter
+unsigned long prev_press;       // Time in millis of last button press
+unsigned long packetnum;        // Packet counter
+unsigned int p_pres;            // Pitot tube raw pressure
+unsigned int p_temp;            // Pitot tube raw temp
+double p_psi;                   // Pitot tube pressure (psi)
+double p_vel;                   // Pitot tube velocity
+double p_cel;                   // Pitot tube temp (*C)
+int p_stat;                     // Pitot tube status 0: good 1, 2: error
 
-// for button
-boolean record = false;
-unsigned long record_last;
-int16_t packetnum = 0;  // packet counter, we increment per transmission
+File logfile;                   // File object to store open file
+char fname[] = "/FLIGHT00.TXT"; // Filename, chars 7,8 are incremented
+String GPSstr = "\n";           // GPS NMEA formatted string
+uint8_t sys;                    // IMU overall status [0-3] uncalibrated->fully calibrated
+uint8_t gyro;                   // IMU gyroscope status [0-3]
+uint8_t accel;                  // IMU accelerometer status [0-3]
+uint8_t mag;                    // IMU magnetometer status [0-3]
+boolean record;                 // Record data - state changed by button
+
 
 
 void setup(void)
@@ -69,8 +81,12 @@ void setup(void)
   digitalWrite(RED_LED, LOW);
 
   Serial.begin(115200);
-  delay(1000);
-  //while(!Serial); // Waits until serial monitor is open
+  //while(!Serial);  // Waits until serial monitor is open
+
+
+  // PITOT SETUP
+  Wire.begin();
+  delay(500);
   
 
   // GPS SETUP
@@ -135,107 +151,20 @@ void setup(void)
 }
 
 
-/* 
- *  Blink green led to signify error
- * Setup failed
- */
-void blinkError() {
-  int rate = 100;
-  digitalWrite(GREEN_LED, HIGH);
-  delay(rate);
-  digitalWrite(GREEN_LED, LOW);
-  delay(rate);
-}
-
-
-/* 
- * Get GPS string
- */
-void getGPS() {
-  char c = GPS.read();
-  if (GPS.newNMEAreceived()) {    
-    if (!GPS.parse(GPS.lastNMEA())) { // if checksum fails, don't print the data
-      GPSstr = "\n";
-    }
-    else {
-      GPSstr = GPS.lastNMEA();
-    }
-  }
-}
-
-/*
- * Records sensor reading into Serial and logfile, adding comma after
- * Data type double
- */
-void sensorPrintInt(int data, File logfile) {
-  Serial.print(data);
-  Serial.print(",");
-  
-  if (logfile) {
-    logfile.print(data);
-    logfile.print(",");
-  }
-}
-
-/*
- * Records sensor reading into Serial and logfile, adding comma after
- * Data type double
- */
-void sensorPrintDou(double data, File logfile) {
-  Serial.print(data);
-  Serial.print(",");
-  
-  if (logfile) {
-    logfile.print(data);
-    logfile.print(",");
-  }
-}
-
-/*
- * Records sensor reading into Serial and logfile, adding newline after
- * Data type String
- */
-void sensorPrintStr(String str, File logfile) {
-  Serial.print(str);
-    
-  if (logfile) {
-    logfile.print(str);
-  }
-}
-
-
 void loop(void) {
 
-  // read from sensors
-  getGPS();
-  bno.getCalibration(&sys, &gyro, &accel, &mag);
-  imu::Vector<3> lin = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
-  imu::Vector<3> rps = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
-  imu::Quaternion quat = bno.getQuat();
-  bmp.performReading();
-  
-  
-  // turn on green light if imu is calibrated
-  if (sys > 0) {
-    digitalWrite(GREEN_LED, HIGH);
-  }
-  else {
-    digitalWrite(GREEN_LED, LOW);
-  }
-
-  
-  // if new record button is pressed
-  if (digitalRead(BUTTON) == LOW && millis() >= record_last + DEBOUNCE) {
-    record_last = millis();
-    record = !record;
+  // register new button press
+  if (digitalRead(BUTTON) == LOW && millis() >= prev_press + DEBOUNCE) {
+    prev_press = millis();
+    record = !record;  // toggle state
+    
     if (record) {
       count = 0;
-      // create new FLIGHTXX.txt
-      strcpy(filename, "/FLIGHT00.txt");
+      // create new FLIGHTXX.TXT
       for (uint8_t i = 0; i < 100; i++) {
-        filename[7] = '0' + i/10;
-        filename[8] = '0' + i%10;
-        if (! SD.exists(filename)) {
+        fname[7] = '0' + i/10;
+        fname[8] = '0' + i%10;
+        if (!SD.exists(fname)) {
           break;
         }
       }
@@ -243,37 +172,71 @@ void loop(void) {
   }
 
   
-  // only print if it's time to sample and record is pressed
-  if (record && millis() >= prev_time + SAMPLE_RATE) {
-    prev_time = millis();
+  // only record if it's time to sample
+  if (record && millis() >= prev_sample + SAMPLE_RATE) {
+    prev_sample = millis();
+
+    // read from sensors
+    getGPS();
+    bno.getCalibration(&sys, &gyro, &accel, &mag);
+    imu::Vector<3> lin = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
+    imu::Vector<3> rps = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
+    imu::Quaternion quat = bno.getQuat();
+    bmp.performReading();
+    p_stat = fetch_pitot(&p_pres, &p_temp);
+
+    // pitot tube conversions
+    p_psi = (double)((p_pres - 819.15) / 14744.7);
+    p_psi = p_psi - 0.49060678;
+    p_psi = abs(p_psi);
+    
+    p_vel = ((p_psi * 13789.5144) / 1.225);
+    p_vel = sqrt(p_vel);
+
+    p_cel = (double)(p_temp * 0.09770395701);
+    p_cel = p_cel - 50;
+
+    
+    // turn on green light if IMU is calibrated
+    if (sys > 0) {
+      digitalWrite(GREEN_LED, HIGH);
+    }
+    else {
+      digitalWrite(GREEN_LED, LOW);
+    }
+
 
     // print data from all sensors to Serial and logfile
-    logfile = SD.open(filename, FILE_WRITE);
+    logfile = SD.open(fname, FILE_WRITE);
 
-    sensorPrintInt(count, logfile);
+    sensorPrintULo(count, logfile);
     sensorPrintInt(sys, logfile);
-    sensorPrintDou(lin.x(), logfile);
-    sensorPrintDou(lin.y(), logfile);
-    sensorPrintDou(lin.z(), logfile);
-    sensorPrintDou(rps.x(), logfile);
-    sensorPrintDou(rps.y(), logfile);
-    sensorPrintDou(rps.z(), logfile);
-    sensorPrintDou(quat.w(), logfile);
-    sensorPrintDou(quat.x(), logfile);
-    sensorPrintDou(quat.y(), logfile);
-    sensorPrintDou(quat.z(), logfile);
-    sensorPrintDou(bmp.temperature, logfile);
-    sensorPrintDou(bmp.pressure, logfile);
+    sensorPrintInt(p_stat, logfile);
+    sensorPrintDou(p_pres, 1, logfile);
+    sensorPrintDou(p_temp, 1, logfile);
+    sensorPrintDou(p_psi, 10, logfile);
+    sensorPrintDou(p_vel, 3, logfile);
+    sensorPrintDou(p_cel, 3, logfile);
+    sensorPrintDou(lin.x(), 3, logfile);
+    sensorPrintDou(lin.y(), 3, logfile);
+    sensorPrintDou(lin.z(), 3, logfile);
+    sensorPrintDou(rps.x(), 3, logfile);
+    sensorPrintDou(rps.y(), 3, logfile);
+    sensorPrintDou(rps.z(), 3, logfile);
+    sensorPrintDou(quat.w(), 3, logfile);
+    sensorPrintDou(quat.x(), 3, logfile);
+    sensorPrintDou(quat.y(), 3, logfile);
+    sensorPrintDou(quat.z(), 3, logfile);
+    sensorPrintDou(bmp.temperature, 3, logfile);
+    sensorPrintDou(bmp.pressure, 3, logfile);
     sensorPrintStr(GPSstr, logfile);
 
     logfile.close();
-
   }
-}
 
   /* 
-  if (millis() >= prev_time + SAMPLE_RATE) {
-    prev_time = millis();
+  if (millis() >= prev_sample + SAMPLE_RATE) {
+    prev_sample = millis();
     
     // SENDING PACKET OVER RADIO
     count++;
@@ -327,5 +290,120 @@ void loop(void) {
     rf95.waitPacketSent();
 
   }
-}
 */
+}
+
+
+/*
+ * Returns sensor status and updates p_pres and p_temp
+ */
+int fetch_pitot(unsigned int *p_pres, unsigned int *p_temp)
+{
+  Wire.beginTransmission(PITOT_ADDR);
+  Wire.endTransmission();
+  delay(10);
+  
+  // Request 4 bytes = status (2 bits) + pressure (14 bits) + temp (11 bits) + 5 extra bits
+  Wire.requestFrom((int)PITOT_ADDR, (int)4);  
+  byte Press_H = Wire.read();
+  byte Press_L = Wire.read();
+  byte Temp_H = Wire.read();
+  byte Temp_L = Wire.read();
+  Wire.endTransmission();
+
+
+  // Get status from 2 leftmost bits of Press_H
+  byte _status = (Press_H >> 6) & 0x03;
+
+  // Get 14 bit pressure from H & L bytes
+  Press_H = Press_H & 0x3f;
+  *p_pres = (((unsigned int)Press_H) << 8) | Press_L;
+
+  // Get 11 bit temp from H & L bytes
+  Temp_L = (Temp_L >> 5);
+  *p_temp = (((unsigned int)Temp_H) << 3) | Temp_L;
+
+  return (int)_status;
+}
+
+
+/* 
+ * Update GPSstr
+ */
+void getGPS() {
+  char c = GPS.read();
+  if (GPS.newNMEAreceived()) {    
+    if (!GPS.parse(GPS.lastNMEA())) { // if checksum fails, don't print the data
+      GPSstr = "\n";
+    }
+    else {
+      GPSstr = GPS.lastNMEA();
+    }
+  }
+}
+
+
+/* 
+ * Blink green led to signify error - setup failed
+ */
+void blinkError() {
+  int rate = 100;
+  digitalWrite(GREEN_LED, HIGH);
+  delay(rate);
+  digitalWrite(GREEN_LED, LOW);
+  delay(rate);
+}
+
+
+/*
+ * Records sensor reading into Serial and logfile, adding comma after
+ */
+void sensorPrintULo(unsigned long data, File logfile) {
+  Serial.print(data);
+  Serial.print(",");
+  
+  if (logfile) {
+    logfile.print(data);
+    logfile.print(",");
+  }
+}
+
+
+/*
+ * Records sensor reading into Serial and logfile, adding comma after
+ */
+void sensorPrintInt(int data, File logfile) {
+  Serial.print(data);
+  Serial.print(",");
+  
+  if (logfile) {
+    logfile.print(data);
+    logfile.print(",");
+  }
+}
+
+
+/*
+ * Records sensor reading into Serial and logfile, adding comma after
+ */
+void sensorPrintDou(double data, int digits, File logfile) {
+  Serial.print(data, digits);
+  Serial.print(",");
+  
+  if (logfile) {
+    logfile.print(data, digits);
+    logfile.print(",");
+  }
+}
+
+
+/*
+ * Records sensor reading into Serial and logfile
+ */
+void sensorPrintStr(String str, File logfile) {
+  Serial.print(str);
+    
+  if (logfile) {
+    logfile.print(str);
+  }
+}
