@@ -6,7 +6,7 @@ Count, System Calibration level (0-3), Linear Acceleration XYZ (m/s^2), Gyro XYZ
 /* 
  * Inline documentation:
  * BUTTON - used to start & stop recording
- * GREEN_LED - calibration status (on: good, off: bad)
+ * GREEN_LED - solid on if calibrated, blinks upon initialization error
  * RED_LED - blinks when sending data/recording
  */
 
@@ -15,6 +15,7 @@ Count, System Calibration level (0-3), Linear Acceleration XYZ (m/s^2), Gyro XYZ
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
+#include <Adafruit_BMP3XX.h>
 #include <utility/imumaths.h>
 #include <Adafruit_GPS.h>
 #include <RH_RF95.h>
@@ -28,6 +29,7 @@ Count, System Calibration level (0-3), Linear Acceleration XYZ (m/s^2), Gyro XYZ
 #define BNO_ADDR 0x29     // IMU I2C address (0x28 or 0x29)
 #define CARD_SELECT 4     // SD card pin
 #define BUTTON A5         // Momentary button
+#define DEBOUNCE 1000     // Milliseconds between registering presses
 #define RED_LED 13        // Built-in LED
 #define GREEN_LED 8       // Built-in LED
 #define RFM95_CS A1       // LoRa CS pin
@@ -37,23 +39,21 @@ Count, System Calibration level (0-3), Linear Acceleration XYZ (m/s^2), Gyro XYZ
 
 
 // Create instances of sensor classes
-Adafruit_GPS GPS(&GPS_SERIAL);
-Adafruit_BNO055 bno = Adafruit_BNO055(-1, BNO_ADDR);
-RH_RF95 rf95(RFM95_CS, RFM95_INT);
+Adafruit_GPS GPS(&GPS_SERIAL);                        // GPS
+Adafruit_BNO055 bno = Adafruit_BNO055(-1, BNO_ADDR);  // IMU
+Adafruit_BMP3XX bmp;                                  // Altimeter
+RH_RF95 rf95(RFM95_CS, RFM95_INT);                    // LoRa
 
 // Declare global variables
-unsigned long prev_time = 0;
-unsigned long count = -1;
+unsigned long prev_time, count;
 File logfile;
 char filename[15];
 String GPSstr;
-uint8_t sys, gyro, accel, mag = 0;
+uint8_t sys, gyro, accel, mag;
 
 // for button
 boolean record = false;
-unsigned long record_last = 0;
-const int debounce = 1500;
-
+unsigned long record_last;
 int16_t packetnum = 0;  // packet counter, we increment per transmission
 
 
@@ -69,15 +69,16 @@ void setup(void)
   digitalWrite(RED_LED, LOW);
 
   Serial.begin(115200);
-  delay(500);
-  Serial.println("Hello???");
+  delay(1000);
+  //while(!Serial); // Waits until serial monitor is open
+  
 
   // GPS SETUP
   GPS_SERIAL.begin(9600);
   // Output only GGA NMEA sentences
   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_GGAONLY);
-  // And send 10 updates per second
-  GPS.sendCommand(PMTK_SET_NMEA_UPDATE_10HZ);
+  // And send 1 update per second (fastest GPS can go)
+  GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
 
 
   // BNO SETUP
@@ -89,6 +90,21 @@ void setup(void)
     }
   }
   bno.setExtCrystalUse(true);
+
+
+  // BMP SETUP
+  if (!bmp.begin()) {
+    Serial.println("Could not find a valid BMP3 sensor, check wiring!");
+    while (1) {
+      blinkError();
+    }
+  }
+  // Set up oversampling and filter initialization
+  // See Filter Selection, page 16: https://ae-bst.resource.bosch.com/media/_tech/media/datasheets/BST-BMP388-DS001.pdf
+  bmp.setTemperatureOversampling(BMP3_OVERSAMPLING_8X); // 0.0006 *C resolution
+  bmp.setPressureOversampling(BMP3_OVERSAMPLING_4X);    // 0.66 Pa resolution
+  bmp.setIIRFilterCoeff(BMP3_IIR_FILTER_COEFF_3);
+  bmp.setOutputDataRate(BMP3_ODR_50_HZ);
 
 
   // SD SETUP
@@ -116,10 +132,6 @@ void setup(void)
 
   rf95.setFrequency(RF95_FREQ);
   rf95.setTxPower(POWER, false);
-
-
-  // Setup completed successfully
-  digitalWrite(GREEN_LED, HIGH);
 }
 
 
@@ -141,38 +153,83 @@ void blinkError() {
  */
 void getGPS() {
   char c = GPS.read();
-  if (GPS.newNMEAreceived()) {
-    GPSstr = GPS.lastNMEA();
-    //Serial.print(GPSstr);
-    if (!GPS.parse(GPS.lastNMEA())) // if checksum fails, don't print the data
-      GPSstr = "";
+  if (GPS.newNMEAreceived()) {    
+    if (!GPS.parse(GPS.lastNMEA())) { // if checksum fails, don't print the data
+      GPSstr = "\n";
+    }
+    else {
+      GPSstr = GPS.lastNMEA();
+    }
+  }
+}
+
+/*
+ * Records sensor reading into Serial and logfile, adding comma after
+ * Data type double
+ */
+void sensorPrintInt(int data, File logfile) {
+  Serial.print(data);
+  Serial.print(",");
+  
+  if (logfile) {
+    logfile.print(data);
+    logfile.print(",");
+  }
+}
+
+/*
+ * Records sensor reading into Serial and logfile, adding comma after
+ * Data type double
+ */
+void sensorPrintDou(double data, File logfile) {
+  Serial.print(data);
+  Serial.print(",");
+  
+  if (logfile) {
+    logfile.print(data);
+    logfile.print(",");
+  }
+}
+
+/*
+ * Records sensor reading into Serial and logfile, adding newline after
+ * Data type String
+ */
+void sensorPrintStr(String str, File logfile) {
+  Serial.print(str);
+    
+  if (logfile) {
+    logfile.print(str);
   }
 }
 
 
-
-
 void loop(void) {
+
+  // read from sensors
+  getGPS();
+  bno.getCalibration(&sys, &gyro, &accel, &mag);
+  imu::Vector<3> lin = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
+  imu::Vector<3> rps = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
+  imu::Quaternion quat = bno.getQuat();
+  bmp.performReading();
   
-  //getGPS(); // this needs to be called every loop
   
-  /* Display calibration status for each sensor. */
-  //bno.getCalibration(&sys, &gyro, &accel, &mag);
-  /*
   // turn on green light if imu is calibrated
-  if (sys > 0)
+  if (sys > 0) {
     digitalWrite(GREEN_LED, HIGH);
-  else
+  }
+  else {
     digitalWrite(GREEN_LED, LOW);
+  }
 
   
   // if new record button is pressed
-  if (digitalRead(BUTTON) == LOW && millis() >= record_last + debounce) {
+  if (digitalRead(BUTTON) == LOW && millis() >= record_last + DEBOUNCE) {
     record_last = millis();
     record = !record;
     if (record) {
-      Serial.println("start recording");
-      count = -1;
+      count = 0;
       // create new FLIGHTXX.txt
       strcpy(filename, "/FLIGHT00.txt");
       for (uint8_t i = 0; i < 100; i++) {
@@ -182,70 +239,39 @@ void loop(void) {
           break;
         }
       }
-      // open file
-      logfile = SD.open(filename, FILE_WRITE);
-    }
-    else {
-      Serial.println("stop recording");
     }
   }
 
+  
   // only print if it's time to sample and record is pressed
-  if (millis() >= prev_time + SAMPLE_RATE && record) {
+  if (record && millis() >= prev_time + SAMPLE_RATE) {
     prev_time = millis();
 
- 
-    
-    imu::Vector<3> lin = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
-    imu::Vector<3> rps = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
-    imu::Quaternion quat = bno.getQuat();
-
-    // count (0++)
-    Serial.print(++count); Serial.print(",");
-    // calibration level (0-3)
-    Serial.print(sys, DEC); Serial.print(",");
-    // linear acceleration XYZ (m/s^2)
-    Serial.print(lin.x()); Serial.print(",");
-    Serial.print(lin.y()); Serial.print(",");
-    Serial.print(lin.z()); Serial.print(",");
-    // gyroscope XYZ (rad per sec)
-    Serial.print(rps.x()); Serial.print(",");
-    Serial.print(rps.y()); Serial.print(",");
-    Serial.print(rps.z()); Serial.print(",");
-    // Quaternion data WXYZ
-    Serial.print(quat.w(), 4); Serial.print(",");
-    Serial.print(quat.x(), 4); Serial.print(",");
-    Serial.print(quat.y(), 4); Serial.print(",");
-    Serial.print(quat.z(), 4); Serial.print(",");
-    Serial.println(GPSstr);
-    
-    
+    // print data from all sensors to Serial and logfile
     logfile = SD.open(filename, FILE_WRITE);
-    if (logfile) {
-      logfile.print(count); logfile.print(",");
-      // calibration level (0-3)
-      logfile.print(sys, DEC); logfile.print(",");
-      // linear acceleration XYZ (m/s^2)
-      logfile.print(lin.x()); logfile.print(",");
-      logfile.print(lin.y()); logfile.print(",");
-      logfile.print(lin.z()); logfile.print(",");
-      // gyroscope XYZ (rad per sec)
-      logfile.print(rps.x()); logfile.print(",");
-      logfile.print(rps.y()); logfile.print(",");
-      logfile.print(rps.z()); logfile.print(",");
-      // Quaternion data WXYZ
-      logfile.print(quat.w(), 4); logfile.print(",");
-      logfile.print(quat.x(), 4); logfile.print(",");
-      logfile.print(quat.y(), 4); logfile.print(",");
-      logfile.print(quat.z(), 4);logfile.print(",");
-      logfile.print(GPSstr);
-      logfile.close();
 
-   
-    }
+    sensorPrintInt(count, logfile);
+    sensorPrintInt(sys, logfile);
+    sensorPrintDou(lin.x(), logfile);
+    sensorPrintDou(lin.y(), logfile);
+    sensorPrintDou(lin.z(), logfile);
+    sensorPrintDou(rps.x(), logfile);
+    sensorPrintDou(rps.y(), logfile);
+    sensorPrintDou(rps.z(), logfile);
+    sensorPrintDou(quat.w(), logfile);
+    sensorPrintDou(quat.x(), logfile);
+    sensorPrintDou(quat.y(), logfile);
+    sensorPrintDou(quat.z(), logfile);
+    sensorPrintDou(bmp.temperature, logfile);
+    sensorPrintDou(bmp.pressure, logfile);
+    sensorPrintStr(GPSstr, logfile);
+
+    logfile.close();
 
   }
-  */
+}
+
+  /* 
   if (millis() >= prev_time + SAMPLE_RATE) {
     prev_time = millis();
     
@@ -301,33 +327,5 @@ void loop(void) {
     rf95.waitPacketSent();
 
   }
-
-  /*
-  // Now wait for a reply
-  uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
-  uint8_t len = sizeof(buf);
-
-  Serial.println("Waiting for reply..."); delay(10);
-  if (rf95.waitAvailableTimeout(1000))
-  { 
-    // Should be a reply message for us now   
-    if (rf95.recv(buf, &len))
-   {
-      Serial.print("Got reply: ");
-      Serial.println((char*)buf);
-      Serial.print("RSSI: ");
-      Serial.println(rf95.lastRssi(), DEC);    
-    }
-    else
-    {
-      Serial.println("Receive failed");
-    }
-  }
-  else
-  {
-    Serial.println("No reply, is there a listener around?");
-  }
-  digitalWrite(RED_LED, LOW);
-  */
- 
 }
+*/
