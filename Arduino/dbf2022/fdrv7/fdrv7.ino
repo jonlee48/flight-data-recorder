@@ -232,14 +232,10 @@ void loop(void) {
     sensorPrintStr(GPSstr, logfile);
 
     logfile.close();
-  }
 
-  /* 
-  if (millis() >= prev_sample + SAMPLE_RATE) {
-    prev_sample = millis();
+
     
     // SENDING PACKET OVER RADIO
-    count++;
     digitalWrite(RED_LED, HIGH);
   
   
@@ -250,11 +246,7 @@ void loop(void) {
     // Sensor reading buffer
     char bufWord[100];
     memset(bufWord,0,100);
-    
-    // get data from IMU
-    imu::Vector<3> lin = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
-    imu::Vector<3> rps = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
-    imu::Quaternion quat = bno.getQuat();
+   
   
     String t = String(millis());
     t.toCharArray(bufWord,100);
@@ -289,8 +281,11 @@ void loop(void) {
     rf95.send((uint8_t *)radiopacket, 30); // LIMIT 30 chars
     rf95.waitPacketSent();
 
+
+    // update counter
+    count++;
   }
-*/
+  
 }
 
 
