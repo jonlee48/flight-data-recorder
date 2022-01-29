@@ -11,8 +11,11 @@ Created on Sat Oct  2 16:02:17 2021
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
+import plotly
+import plotly.graph_objects as go
 from dash.dependencies import Input, Output, State
 import plotly.express as px
+from plotly.subplots import make_subplots
 import pandas as pd
 import serial
 import time
@@ -86,7 +89,12 @@ ser = serial.Serial(port=PORT,
 app = dash.Dash(__name__)
 
 # define a line plot
-fig = px.line(df, x='count', y='pitch', title='Live Data')
+#fig = go.Figure()
+fig = make_subplots(specs=[[{"secondary_y": True}]])
+fig.add_trace(go.Scatter(x=df['count'], y=df['pitch'], mode='lines', name='pitch (deg)'), secondary_y=False)
+fig.add_trace(go.Scatter(x=df['count'], y=df['altitude'], mode='lines', name='altitude (m)'), secondary_y=False)
+fig.add_trace(go.Scatter(x=df['count'], y=df['airspeed'], mode='lines', name='airspeed (m/s)'), secondary_y=True)
+#fig = px.line(df, x='count', y='pitch', title='Live Data')
 
 
 # layout the components of the web page
@@ -100,6 +108,7 @@ app.layout = html.Div(children=[
     html.H2(id='xaccel', children=''),
     html.H2(id='rssi', children=''),
 
+    html.Button('Save Plot', id='save', n_clicks=0),
     # add our line plot to the page
     dcc.Graph(
         id='line-graph',
@@ -129,6 +138,21 @@ app.layout = html.Div(children=[
     )
 ])
 
+@app.callback(
+    Output('save', 'children'),
+    Input('save', 'n_clicks'),
+    State('line-graph', 'figure')
+)
+def update_output(n_clicks, fig):
+    path = "./flight__.html"
+    figure = go.Figure(fig)
+    figure.write_html(path)
+
+
+    print("saved figure as {}".format(path))
+    button_text = "Saved plots: {}".format(n_clicks)
+    return button_text
+
 
 # Callback function every interval
 # Returns updated figure
@@ -147,7 +171,7 @@ def batchUpdate(n):
     while not queue.empty():
         line = queue.get()
         data = line.split(',')
-        print(data)
+        #print(data)
         df.loc[len(df)] = data
 
     batchEnd = len(df)
@@ -212,9 +236,15 @@ app.clientside_callback(
         // TODO: parameterize hardcoded count and pitch 
         if (renderQueue['pitch'].length > 0) {
             let x = Number(renderQueue['count'].shift());
-            let y = Number(renderQueue['pitch'].shift());
+            let pitch = Number(renderQueue['pitch'].shift());
+            let altitude = Number(renderQueue['altitude'].shift());
+            let airspeed = Number(renderQueue['airspeed'].shift());
             newFig['data'][0]['x'].push(x);
-            newFig['data'][0]['y'].push(y);
+            newFig['data'][0]['y'].push(pitch);
+            newFig['data'][1]['x'].push(x);
+            newFig['data'][1]['y'].push(altitude);
+            newFig['data'][2]['x'].push(x);
+            newFig['data'][2]['y'].push(airspeed);
         }
         //console.log(figure['data'][0]); 
         return newFig; 
