@@ -3,7 +3,7 @@ import pandas as pd
 from scipy.interpolate import interp1d
 from noise import pnoise1
 
-NUM_POINTS = 100
+NUM_POINTS = 10000
 OCTAVES = 2
 
 if __name__ == '__main__':

@@ -52,6 +52,12 @@ for i, entry in enumerate(format):
 # dataframe to store packets on the server
 df = pd.DataFrame(columns=format, dtype='float')
 
+# Thread to read from csv file
+def fileReader(queue):
+    f = open("data/perlin_data.csv", "r")
+    while True:
+        queue.put(f.readline())
+        time.sleep(.1)
 
 # Thread to constantly read from ground station
 def streamReader(queue):
@@ -76,14 +82,16 @@ def streamReader(queue):
 queue = queue.Queue()
 
 # Setup stream reader thread
-readerThread = threading.Thread(target=streamReader, args=(queue,), name='streamReader')
+#readerThread = threading.Thread(target=streamReader, args=(queue,), name='streamReader')
+fileThread = threading.Thread(target=fileReader, args=(queue,), name='fileReader')
 
 
 # Establish a serial connection to ground station
+'''
 ser = serial.Serial(port=PORT,
                     baudrate=BAUD_RATE,
                     timeout=0)
-
+'''
 
 # Create a new Dash web app instance
 app = dash.Dash(__name__)
@@ -172,6 +180,7 @@ def batchUpdate(n):
         line = queue.get()
         data = line.split(',')
         #print(data)
+        print(len(data))
         df.loc[len(df)] = data
 
     batchEnd = len(df)
@@ -259,5 +268,6 @@ app.clientside_callback(
 
 # run the web app
 if __name__ == '__main__':
-    readerThread.start()
+    #readerThread.start()
+    fileThread.start()
     app.run_server(port='7000', debug=True, use_reloader=False)
