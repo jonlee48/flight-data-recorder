@@ -21,6 +21,7 @@ import serial
 import time
 import threading
 import queue
+import dash_daq as daq
 
 PORT = 'COM9'       # Port of Ground Station, check name in Arduino IDE > Tools > Port
 BAUD_RATE = 115200  # baud rate (e.g. 9600 or 115200)
@@ -115,7 +116,13 @@ app.layout = html.Div(children=[
     html.H2(id='roll', children=''),
     html.H2(id='xaccel', children=''),
     html.H2(id='rssi', children=''),
-
+    daq.Gauge(
+        id='gauge-1',
+        label="Default",
+        value=0,
+        min=0,
+        max=30
+    ),
     html.Button('Save Plot', id='save', n_clicks=0),
     # add our line plot to the page
     dcc.Graph(
@@ -157,7 +164,7 @@ def update_output(n_clicks, fig):
     figure.write_html(path)
 
 
-    print("saved figure as {}".format(path))
+    #print("saved figure as {}".format(path))
     button_text = "Saved plots: {}".format(n_clicks)
     return button_text
 
@@ -173,6 +180,7 @@ def update_output(n_clicks, fig):
               Output('roll', 'children'),
               Output('xaccel', 'children'),
               Output('rssi', 'children'),
+              Output('gauge-1','value'),
               Input('batch-interval', 'n_intervals'))
 def batchUpdate(n):
     batchStart = len(df)
@@ -180,7 +188,7 @@ def batchUpdate(n):
         line = queue.get()
         data = line.split(',')
         #print(data)
-        print(len(data))
+        #print(len(data))
         df.loc[len(df)] = data
 
     batchEnd = len(df)
@@ -189,7 +197,7 @@ def batchUpdate(n):
     batch = df[batchStart:batchEnd]
     dict = batch.to_dict('list')
 
-    print('Batch updating {} items'.format(batchEnd-batchStart))
+    #print('Batch updating {} items'.format(batchEnd-batchStart))
 
     count = 'Count: {}'.format(df['count'].values[-1])
     millis = 'Millis: {}'.format(df['millis'].values[-1])
@@ -199,7 +207,10 @@ def batchUpdate(n):
     roll = 'Roll: {} deg'.format(df['roll'].values[-1])
     xaccel = 'Xaccel: {} m/s^2'.format(df['xaccel'].values[-1])
     rssi = 'Rssi: {}'.format(df['rssi'].values[-1])
-    return dict, count, millis, airspeed, altitude, pitch, roll, xaccel, rssi
+
+    gauge_val = float(df['airspeed'].values[-1])
+    print(gauge_val)
+    return dict, count, millis, airspeed, altitude, pitch, roll, xaccel, rssi, gauge_val
 
 
 # appends batch-store to render-queue whenever batch-store is updated
