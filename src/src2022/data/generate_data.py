@@ -4,9 +4,19 @@ from scipy.interpolate import interp1d
 from noise import pnoise1
 from numpy import interp
 
+'''
+Generates fake data for sensor readings
+Saves as CSV file
+'''
+
+
 NUM_POINTS = 10000
 STEP = 0.01
 BASE = 0
+FILENAME = 'perlin_data.csv'
+
+# Perlin noise example:
+# https://github.com/stephensheridan/python-perlin-noise/blob/master/perlinnoise.py
 
 # Generate N perlin noise values from base with time step
 # Step: the increment in time value
@@ -51,9 +61,6 @@ if __name__ == '__main__':
 
     for col_name in counts:
         _min, _max, _step = counts[col_name]
-        print(_min)
-        print(_max)
-        print(_step)
         df[col_name] = list(range(_min,_max,_step))
 
     for col_name in sensors:
@@ -65,4 +72,4 @@ if __name__ == '__main__':
         df[col_name] = pvalues
 
     print(df)
-    df.to_csv('perlin_data.csv',index=False,header=False)
+    df.to_csv(FILENAME,index=False,header=False)
