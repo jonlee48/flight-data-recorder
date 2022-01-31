@@ -23,10 +23,10 @@ import queue
 import dash_daq as daq
 import os
 
-OFFLINE = True
+OFFLINE = True      # If False, read data from file. If True, read data from serial port
 PORT = 'COM9'       # Port of Ground Station, check name in Arduino IDE > Tools > Port
 BAUD_RATE = 115200  # baud rate (e.g. 9600 or 115200)
-REFRESH_RATE = 1   # how fast graph updates (milliseconds)
+REFRESH_RATE = 1    # how fast graph updates (milliseconds)
 BATCH_RATE = 1000   # how long to wait to batch packets (milliseconds)
 
 
@@ -61,7 +61,7 @@ def fileReader(queue):
         queue.put(f.readline())
         time.sleep(.1)
 
-# Thread to constantly read from ground station
+# Thread to constantly read from serial port (ground station transmitting data)
 def streamReader(queue):
     # Establish a serial connection to ground station
     ser = serial.Serial(port=PORT, baudrate=BAUD_RATE, timeout=0)
@@ -92,17 +92,14 @@ fileThread = threading.Thread(target=fileReader, args=(queue,), name='fileReader
 
 
 
-
 # Create a new Dash web app instance
 app = dash.Dash(__name__)
 
 # define a line plot
-#fig = go.Figure()
 fig = make_subplots(specs=[[{'secondary_y': True}]])
 fig.add_trace(go.Scatter(x=df['count'], y=df['pitch'], mode='lines', name='pitch (deg)'), secondary_y=False)
 fig.add_trace(go.Scatter(x=df['count'], y=df['altitude'], mode='lines', name='altitude (m)'), secondary_y=False)
 fig.add_trace(go.Scatter(x=df['count'], y=df['airspeed'], mode='lines', name='airspeed (m/s)'), secondary_y=True)
-#fig = px.line(df, x='count', y='pitch', title='Live Data')
 
 
 # layout the components of the web page
@@ -116,8 +113,10 @@ app.layout = html.Div(children=[
     html.H2(id='xaccel', children=''),
     html.H2(id='rssi', children=''),
     daq.Gauge(
-        id='gauge-1',
-        label='Default',
+        id='gauge-airspeed',
+        showCurrentValue=True,
+        units='m/s',
+        label='Airspeed',
         value=0,
         min=0,
         max=50
@@ -162,7 +161,7 @@ app.layout = html.Div(children=[
 )
 def update_output(n_clicks, filename, fig):
     if n_clicks == 0:
-        # in place of prevent_initial_call=True
+        # in-place of prevent_initial_call=True
         return dash.no_update
 
     figure = go.Figure(fig)
@@ -190,7 +189,7 @@ def update_output(n_clicks, filename, fig):
               Output('roll', 'children'),
               Output('xaccel', 'children'),
               Output('rssi', 'children'),
-              Output('gauge-1','value'),
+              Output('gauge-airspeed','value'),
               Input('batch-interval', 'n_intervals'))
 def batchUpdate(n):
     batchStart = len(df)
