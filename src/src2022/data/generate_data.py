@@ -2,15 +2,43 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 from noise import pnoise1
+from numpy import interp
 
 NUM_POINTS = 10000
-OCTAVES = 2
+STEP = 0.01
+BASE = 0
+
+# Generate N perlin noise values from base with time step
+# Step: the increment in time value
+# Base: start of time value
+# OutputRange: required output range for interpolation [MIN, MAX]
+# returns list of perlin noise values
+def perlin_vals(base=0, N=1000, step=0.01, outputRange=[0,100]):
+    # Store some perlin noise values
+    pvalues = []
+    perlinRange = [-1, 1]
+
+    for x in range(N):
+        # Use 1d pnoise1 to generate noise value
+        pval = pnoise1(base)
+        # Interpolate/Map the perlin noise values to the required
+        # range and store
+        pvalues.append(interp(pval, perlinRange, outputRange))
+        # Incerement base by step to get next noise value
+        base = base + step
+    global BASE
+    BASE = base
+    return pvalues
+
 
 if __name__ == '__main__':
     # Data and their ranges
-    format = {
-        'count': (0,100000),
-        'millis': (5000,5000000),
+    counts = {
+        'count': (0, NUM_POINTS,1),
+        'millis': (5000, NUM_POINTS*100+5000,100),
+    }
+
+    sensors = {
         'airspeed': (0,50),
         'altitude': (0,200),
         'pitch': (-90,90),
@@ -21,21 +49,20 @@ if __name__ == '__main__':
 
     df = pd.DataFrame()
 
-    octaves = 2
+    for col_name in counts:
+        _min, _max, _step = counts[col_name]
+        print(_min)
+        print(_max)
+        print(_step)
+        df[col_name] = list(range(_min,_max,_step))
 
-    for col_name in format:
-        scale = format[col_name]
-        print(col_name)
+    for col_name in sensors:
+        scale = sensors[col_name]
+        _min, _max = scale
+        _range = [_min, _max]
 
-        col_vals = []
-        xs = np.linspace(0.1,0.9,NUM_POINTS)
-        map = interp1d([0,1], [scale[0], scale[1]])
-        for x in xs:
-            p = pnoise1(x, OCTAVES)
-            col_vals.append(float(map(p)))
-
-        #print(col_vals)
-        df[col_name] = col_vals
+        pvalues = perlin_vals(BASE, NUM_POINTS, STEP, _range)
+        df[col_name] = pvalues
 
     print(df)
     df.to_csv('perlin_data.csv',index=False,header=False)

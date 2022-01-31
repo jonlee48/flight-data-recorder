@@ -121,7 +121,7 @@ app.layout = html.Div(children=[
         label="Default",
         value=0,
         min=0,
-        max=30
+        max=50
     ),
     html.Button('Save Plot', id='save', n_clicks=0),
     # add our line plot to the page
