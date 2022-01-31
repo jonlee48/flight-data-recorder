@@ -9,8 +9,7 @@ Created on Sat Oct  2 16:02:17 2021
 # visit http://127.0.0.1:7000/ in your web browser.
 
 import dash
-import dash_core_components as dcc
-import dash_html_components as html
+from dash import html, dcc
 import plotly
 import plotly.graph_objects as go
 from dash.dependencies import Input, Output, State
@@ -21,10 +20,13 @@ import serial
 import time
 import threading
 import queue
+import dash_daq as daq
+import os
 
+OFFLINE = True
 PORT = 'COM9'       # Port of Ground Station, check name in Arduino IDE > Tools > Port
 BAUD_RATE = 115200  # baud rate (e.g. 9600 or 115200)
-REFRESH_RATE = 10   # how fast graph updates (milliseconds)
+REFRESH_RATE = 1   # how fast graph updates (milliseconds)
 BATCH_RATE = 1000   # how long to wait to batch packets (milliseconds)
 
 
@@ -52,9 +54,18 @@ for i, entry in enumerate(format):
 # dataframe to store packets on the server
 df = pd.DataFrame(columns=format, dtype='float')
 
+# Thread to read from csv file
+def fileReader(queue):
+    f = open("data/perlin_data.csv", "r")
+    while True:
+        queue.put(f.readline())
+        time.sleep(.1)
 
 # Thread to constantly read from ground station
 def streamReader(queue):
+    # Establish a serial connection to ground station
+    ser = serial.Serial(port=PORT, baudrate=BAUD_RATE, timeout=0)
+
     # Stack overflow solution:
     # https://stackoverflow.com/questions/61166544/readline-in-pyserial-sometimes-captures-incomplete-values-being-streamed-from
     while True:
@@ -77,12 +88,9 @@ queue = queue.Queue()
 
 # Setup stream reader thread
 readerThread = threading.Thread(target=streamReader, args=(queue,), name='streamReader')
+fileThread = threading.Thread(target=fileReader, args=(queue,), name='fileReader')
 
 
-# Establish a serial connection to ground station
-ser = serial.Serial(port=PORT,
-                    baudrate=BAUD_RATE,
-                    timeout=0)
 
 
 # Create a new Dash web app instance
@@ -90,7 +98,7 @@ app = dash.Dash(__name__)
 
 # define a line plot
 #fig = go.Figure()
-fig = make_subplots(specs=[[{"secondary_y": True}]])
+fig = make_subplots(specs=[[{'secondary_y': True}]])
 fig.add_trace(go.Scatter(x=df['count'], y=df['pitch'], mode='lines', name='pitch (deg)'), secondary_y=False)
 fig.add_trace(go.Scatter(x=df['count'], y=df['altitude'], mode='lines', name='altitude (m)'), secondary_y=False)
 fig.add_trace(go.Scatter(x=df['count'], y=df['airspeed'], mode='lines', name='airspeed (m/s)'), secondary_y=True)
@@ -107,7 +115,15 @@ app.layout = html.Div(children=[
     html.H2(id='roll', children=''),
     html.H2(id='xaccel', children=''),
     html.H2(id='rssi', children=''),
-
+    daq.Gauge(
+        id='gauge-1',
+        label='Default',
+        value=0,
+        min=0,
+        max=50
+    ),
+    dcc.Input(id='file-input', type='text', value='Flight00.html', debounce=True),
+    html.H3(id='save-status', children=''),
     html.Button('Save Plot', id='save', n_clicks=0),
     # add our line plot to the page
     dcc.Graph(
@@ -139,19 +155,28 @@ app.layout = html.Div(children=[
 ])
 
 @app.callback(
-    Output('save', 'children'),
+    Output('save-status', 'children'),
     Input('save', 'n_clicks'),
-    State('line-graph', 'figure')
+    State('file-input', 'value'),
+    State('line-graph', 'figure'),
 )
-def update_output(n_clicks, fig):
-    path = "./flight__.html"
+def update_output(n_clicks, filename, fig):
+    if n_clicks == 0:
+        # in place of prevent_initial_call=True
+        return dash.no_update
+
     figure = go.Figure(fig)
-    figure.write_html(path)
 
+    path = 'saves/'
+    files = os.listdir(path)
 
-    print("saved figure as {}".format(path))
-    button_text = "Saved plots: {}".format(n_clicks)
-    return button_text
+    if filename in files:
+        status = '{} already exists, enter a different name.'.format(filename)
+    else:
+        figure.write_html(path+filename)
+        status = 'Saved plot as {}'.format(filename)
+
+    return status
 
 
 # Callback function every interval
@@ -165,6 +190,7 @@ def update_output(n_clicks, fig):
               Output('roll', 'children'),
               Output('xaccel', 'children'),
               Output('rssi', 'children'),
+              Output('gauge-1','value'),
               Input('batch-interval', 'n_intervals'))
 def batchUpdate(n):
     batchStart = len(df)
@@ -172,6 +198,7 @@ def batchUpdate(n):
         line = queue.get()
         data = line.split(',')
         #print(data)
+        #print(len(data))
         df.loc[len(df)] = data
 
     batchEnd = len(df)
@@ -180,17 +207,19 @@ def batchUpdate(n):
     batch = df[batchStart:batchEnd]
     dict = batch.to_dict('list')
 
-    print('Batch updating {} items'.format(batchEnd-batchStart))
+    #print('Batch updating {} items'.format(batchEnd-batchStart))
 
     count = 'Count: {}'.format(df['count'].values[-1])
     millis = 'Millis: {}'.format(df['millis'].values[-1])
-    airspeed = 'Airspeed: {} m/s'.format(df['airspeed'].values[-1])
-    altitude = 'Altitude: {} m'.format(df['altitude'].values[-1])
-    pitch = 'Pitch: {} deg'.format(df['pitch'].values[-1])
-    roll = 'Roll: {} deg'.format(df['roll'].values[-1])
-    xaccel = 'Xaccel: {} m/s^2'.format(df['xaccel'].values[-1])
-    rssi = 'Rssi: {}'.format(df['rssi'].values[-1])
-    return dict, count, millis, airspeed, altitude, pitch, roll, xaccel, rssi
+    airspeed = 'Airspeed: {:.2f} m/s'.format(float(df['airspeed'].values[-1]))
+    altitude = 'Altitude: {:.2f} m'.format(float(df['altitude'].values[-1]))
+    pitch = 'Pitch: {:.2f} deg'.format(float(df['pitch'].values[-1]))
+    roll = 'Roll: {:.2f} deg'.format(float(df['roll'].values[-1]))
+    xaccel = 'Xaccel: {:.2f} m/s^2'.format(float(df['xaccel'].values[-1]))
+    rssi = 'Rssi: {:.2f}'.format(float(df['rssi'].values[-1]))
+
+    gauge_val = float(df['airspeed'].values[-1])
+    return dict, count, millis, airspeed, altitude, pitch, roll, xaccel, rssi, gauge_val
 
 
 # appends batch-store to render-queue whenever batch-store is updated
@@ -259,5 +288,9 @@ app.clientside_callback(
 
 # run the web app
 if __name__ == '__main__':
-    readerThread.start()
+    if OFFLINE:
+        fileThread.start()  # read from file instead of ground station
+    else:
+        readerThread.start()  # read from ground station
+
     app.run_server(port='7000', debug=True, use_reloader=False)

@@ -15,6 +15,23 @@ STEP = 0.01
 BASE = 0
 FILENAME = 'perlin_data.csv'
 
+# Data and their ranges
+counts = {
+    'count': (0, NUM_POINTS,1),
+    'millis': (5000, NUM_POINTS*100+5000,100),
+}
+
+sensors = {
+    'airspeed': (0,50),
+    'altitude': (0,200),
+    'pitch': (-90,90),
+    'roll': (-90,90),
+    'xaccel': (-4,4),
+    'rssi': (-200,0),
+}
+
+
+
 # Perlin noise example:
 # https://github.com/stephensheridan/python-perlin-noise/blob/master/perlinnoise.py
 
@@ -42,21 +59,6 @@ def perlin_vals(base=0, N=1000, step=0.01, outputRange=[0,100]):
 
 
 if __name__ == '__main__':
-    # Data and their ranges
-    counts = {
-        'count': (0, NUM_POINTS,1),
-        'millis': (5000, NUM_POINTS*100+5000,100),
-    }
-
-    sensors = {
-        'airspeed': (0,50),
-        'altitude': (0,200),
-        'pitch': (-90,90),
-        'roll': (-90,90),
-        'xaccel': (-4,4),
-        'rssi': (-200,0),
-    }
-
     df = pd.DataFrame()
 
     for col_name in counts:
