@@ -23,6 +23,7 @@ import queue
 import dash_daq as daq
 import os
 
+
 OFFLINE = True      # If False, read data from file. If True, read data from serial port
 PORT = 'COM9'       # Port of Ground Station, check name in Arduino IDE > Tools > Port
 BAUD_RATE = 115200  # baud rate (e.g. 9600 or 115200)
@@ -56,7 +57,7 @@ df = pd.DataFrame(columns=format, dtype='float')
 
 # Thread to read from csv file
 def fileReader(queue):
-    f = open("data/perlin_data.csv", "r")
+    f = open("src\src2022\data\perlin_data.csv", "r")
     while True:
         queue.put(f.readline())
         time.sleep(.1)
@@ -121,6 +122,18 @@ app.layout = html.Div(children=[
         min=0,
         max=50
     ),
+        daq.Thermometer(
+        id='my-graduated-bar-1',
+        label="altitude",
+        showCurrentValue=True,
+        units='m',
+        max=200,
+        min=0,
+        value=10,
+style={
+            'margin-bottom': '5%'
+        }
+    ),    
     dcc.Input(id='file-input', type='text', value='Flight00.html', debounce=True),
     html.H3(id='save-status', children=''),
     html.Button('Save Plot', id='save', n_clicks=0),
@@ -178,6 +191,7 @@ def update_output(n_clicks, filename, fig):
     return status
 
 
+
 # Callback function every interval
 # Returns updated figure
 @app.callback(Output('batch-store', 'data'),
@@ -190,6 +204,7 @@ def update_output(n_clicks, filename, fig):
               Output('xaccel', 'children'),
               Output('rssi', 'children'),
               Output('gauge-airspeed','value'),
+              Output('my-graduated-bar-1','value'),
               Input('batch-interval', 'n_intervals'))
 def batchUpdate(n):
     batchStart = len(df)
@@ -216,9 +231,10 @@ def batchUpdate(n):
     roll = 'Roll: {:.2f} deg'.format(float(df['roll'].values[-1]))
     xaccel = 'Xaccel: {:.2f} m/s^2'.format(float(df['xaccel'].values[-1]))
     rssi = 'Rssi: {:.2f}'.format(float(df['rssi'].values[-1]))
+    alt_val=float(df['altitude'].values[-1])
 
     gauge_val = float(df['airspeed'].values[-1])
-    return dict, count, millis, airspeed, altitude, pitch, roll, xaccel, rssi, gauge_val
+    return dict, count, millis, airspeed, altitude, pitch, roll, xaccel, rssi, gauge_val, alt_val
 
 
 # appends batch-store to render-queue whenever batch-store is updated
