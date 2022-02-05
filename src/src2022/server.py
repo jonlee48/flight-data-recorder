@@ -117,9 +117,21 @@ app.layout = html.Div(children=[
         showCurrentValue=True,
         units='m/s',
         label='Airspeed',
-        value=0,
+        value=5,
         min=0,
         max=50
+    ),
+    daq.Gauge(
+        
+        
+        id ='gauge-pitch',
+        showCurrentValue=True,
+        units = 'degrees',
+        label = 'pitch',
+        value = 6,
+        min=-90,
+        max=90,
+        color = {"gradient":True,"ranges":{"yellow":[-30,30],"green":[-90,-30],"red":[30,90]}},
     ),
     dcc.Input(id='file-input', type='text', value='Flight00.html', debounce=True),
     html.H3(id='save-status', children=''),
@@ -190,6 +202,7 @@ def update_output(n_clicks, filename, fig):
               Output('xaccel', 'children'),
               Output('rssi', 'children'),
               Output('gauge-airspeed','value'),
+              Output('gauge-pitch', 'value'),
               Input('batch-interval', 'n_intervals'))
 def batchUpdate(n):
     batchStart = len(df)
@@ -218,7 +231,8 @@ def batchUpdate(n):
     rssi = 'Rssi: {:.2f}'.format(float(df['rssi'].values[-1]))
 
     gauge_val = float(df['airspeed'].values[-1])
-    return dict, count, millis, airspeed, altitude, pitch, roll, xaccel, rssi, gauge_val
+    gauge_pitch = float(df['pitch'].values[-1])
+    return dict, count, millis, airspeed, altitude, pitch, roll, xaccel, rssi, gauge_val, gauge_pitch
 
 
 # appends batch-store to render-queue whenever batch-store is updated
