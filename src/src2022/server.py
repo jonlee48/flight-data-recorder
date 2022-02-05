@@ -101,7 +101,6 @@ fig.add_trace(go.Scatter(x=df['count'], y=df['pitch'], mode='lines', name='pitch
 fig.add_trace(go.Scatter(x=df['count'], y=df['altitude'], mode='lines', name='altitude (m)'), secondary_y=False)
 fig.add_trace(go.Scatter(x=df['count'], y=df['airspeed'], mode='lines', name='airspeed (m/s)'), secondary_y=True)
 
-
 # layout the components of the web page
 app.layout = html.Div(children=[
     html.H2(id='count', children=''),
@@ -121,14 +120,15 @@ app.layout = html.Div(children=[
         min=0,
         max=50
     ),
-    daq.GraduatedBar(
+    daq.Slider(
         id='rssi-gauge',
-        color={"gradient":True,"ranges":{"green":[0,-50],"yellow":[-50,-75],"red":[-75,-100]}},
-        showCurrentValue=True,
-        value=0,
-        min=-100,
+        min=-200,
         max=0,
-        vertical=True,
+        value=0,
+        marks={'0': '0', '-20': '-20', '-40':'-40', '-60':'-60', '-80':'-80','-100':'-100'},
+        handleLabel={"showCurrentValue": True,"label": "value"},
+        step=10,
+        size=512
     ),
     dcc.Input(id='file-input', type='text', value='Flight00.html', debounce=True),
     html.H3(id='save-status', children=''),
