@@ -20,8 +20,11 @@ Count, System Calibration level (0-3), Linear Acceleration XYZ (m/s^2), Gyro XYZ
 #include <Adafruit_GPS.h>
 #include <RH_RF95.h>
 
+// Uncomment this line to enable Serial debugging:
+#define DEBUG 1           // Serial print timings
+
 // Tunable parameters:
-#define SAMPLE_RATE 100   // sample rate in milliseconds
+#define SAMPLE_RATE 200   // sample rate in milliseconds
 #define SEALEVELPRESSURE_HPA 1026.753  // Depends on weather. Default is 1013.25
 #define POWER 23          // transmitter power from 5 to 23 dBm (default is 13 dBm)
 #define NUM_AVG 20        // how many data points are in the pitot tube moving average
@@ -72,6 +75,12 @@ uint8_t accel;                  // IMU accelerometer status [0-3]
 uint8_t mag;                    // IMU magnetometer status [0-3]
 boolean record;                 // Record data - state changed by button
 
+// Debugging timing varibles
+#ifdef DEBUG
+unsigned long time_logging;     // Time in millis spent reading from sensors and logging
+unsigned long time_radio;       // Time in millis sending packet via radio
+unsigned long time_elapsed;     // time_logging + time_radio
+#endif
 
 void setup(void)
 {
@@ -84,8 +93,10 @@ void setup(void)
   digitalWrite(GREEN_LED, LOW);
   digitalWrite(RED_LED, LOW);
 
-  Serial.begin(115200);
-  //while(!Serial);  // Waits until serial monitor is open
+  #ifdef DEBUG
+    Serial.begin(115200);
+    //while(!Serial);  // Blocks until serial monitor is open
+  #endif
 
 
   // PITOT SETUP
@@ -104,7 +115,9 @@ void setup(void)
   // BNO SETUP
   if(!bno.begin())
   {
-    Serial.print("No BNO055 detected ... Check your wiring or I2C ADDR!");
+    #ifdef DEBUG
+      Serial.print("No BNO055 detected ... Check your wiring or I2C ADDR!");
+    #endif
     while(1) {
       blinkError();
     }
@@ -114,7 +127,9 @@ void setup(void)
 
   // BMP SETUP
   if (!bmp.begin()) {
-    Serial.println("Could not find a valid BMP3 sensor, check wiring!");
+    #ifdef DEBUG
+      Serial.println("Could not find a valid BMP3 sensor, check wiring!");
+    #endif
     while (1) {
       blinkError();
     }
@@ -130,7 +145,9 @@ void setup(void)
   // SD SETUP
   // see if the card is present and can be initialized:
   if (!SD.begin(CARD_SELECT)) {
-    Serial.println("Card init. failed!");
+    #ifdef DEBUG
+      Serial.println("Card init. failed!");
+    #endif
     while(1) {
       blinkError();
     }
@@ -144,7 +161,9 @@ void setup(void)
   delay(10);
 
   if (!rf95.init()) {
-    Serial.println("LoRa radio init failed");
+    #ifdef DEBUG
+      Serial.println("LoRa radio init failed");
+    #endif
     while(1) {
       blinkError();
     }
@@ -171,6 +190,10 @@ void loop(void) {
   // only record if it's time to sample
   if (record && millis() >= prev_sample + SAMPLE_RATE) {
     prev_sample = millis();
+
+    #ifdef DEBUG
+      time_logging = millis();
+    #endif
 
     // read from sensors
     getGPS();
@@ -211,6 +234,10 @@ void loop(void) {
 
     // print data from all sensors to Serial and logfile
     logfile = SD.open(fname, FILE_WRITE);
+
+    #ifdef DEBUG
+      Serial.print("Data: ");
+    #endif
     
     sensorPrintULo(prev_sample, logfile);
     sensorPrintULo(count, logfile);
@@ -241,6 +268,10 @@ void loop(void) {
 
     logfile.close();
 
+    #ifdef DEBUG
+      time_logging = millis() - time_logging;
+      time_radio = millis();
+    #endif
 
     
     // SENDING PACKET OVER RADIO
@@ -270,10 +301,6 @@ void loop(void) {
       euler.z(),
       lin.x()
     );
-      
-  
-    Serial.println(radiopacket);
-    Serial.println(strlen(radiopacket));
 
     // blink
     digitalWrite(RED_LED, LOW);
@@ -282,7 +309,23 @@ void loop(void) {
     
     rf95.send((uint8_t *)radiopacket, strlen(radiopacket));
     rf95.waitPacketSent();
-
+    
+    #ifdef DEBUG
+      time_radio = millis() - time_radio;
+      time_elapsed = time_logging + time_radio;
+      
+      Serial.print("Packet: ");
+      Serial.println(radiopacket);
+      Serial.print("Packet len: ");
+      Serial.println(strlen(radiopacket));
+      Serial.print("time_logging: ");
+      Serial.println(time_logging);
+      Serial.print("time_radio: ");
+      Serial.println(time_radio);
+      Serial.print("time_elapsed: ");
+      Serial.println(time_elapsed);
+      Serial.println("");
+    #endif
 
     // update counter
     count++;
@@ -293,7 +336,7 @@ void loop(void) {
   if (!record) {
     uint8_t buf[20];
     uint8_t len = sizeof(buf);
-    if (rf95.waitAvailableTimeout(1000)) { 
+    if (rf95.waitAvailableTimeout(10)) { 
       // Should be a reply message for us now   
       if (rf95.recv(buf, &len)) {
         if (strcmp((char*)buf, "RECORD") == 0) {
@@ -406,8 +449,10 @@ void blinkError() {
  * Records sensor reading into Serial and logfile, adding comma after
  */
 void sensorPrintULo(unsigned long data, File logfile) {
-  Serial.print(data);
-  Serial.print(",");
+  #ifdef DEBUG
+    Serial.print(data);
+    Serial.print(",");
+  #endif
   
   if (logfile) {
     logfile.print(data);
@@ -420,8 +465,10 @@ void sensorPrintULo(unsigned long data, File logfile) {
  * Records sensor reading into Serial and logfile, adding comma after
  */
 void sensorPrintInt(int data, File logfile) {
-  Serial.print(data);
-  Serial.print(",");
+  #ifdef DEBUG
+    Serial.print(data);
+    Serial.print(",");
+  #endif
   
   if (logfile) {
     logfile.print(data);
@@ -434,8 +481,10 @@ void sensorPrintInt(int data, File logfile) {
  * Records sensor reading into Serial and logfile, adding comma after
  */
 void sensorPrintDou(double data, int digits, File logfile) {
-  Serial.print(data, digits);
-  Serial.print(",");
+  #ifdef DEBUG
+    Serial.print(data, digits);
+    Serial.print(",");
+  #endif
   
   if (logfile) {
     logfile.print(data, digits);
@@ -448,7 +497,9 @@ void sensorPrintDou(double data, int digits, File logfile) {
  * Records sensor reading into Serial and logfile
  */
 void sensorPrintStr(String str, File logfile) {
-  Serial.print(str);
+  #ifdef DEBUG
+    Serial.print(str);
+  #endif
     
   if (logfile) {
     logfile.print(str);
