@@ -21,28 +21,31 @@ Count, System Calibration level (0-3), Linear Acceleration XYZ (m/s^2), Gyro XYZ
 #include <RH_RF95.h>
 
 // Uncomment this line to enable Serial debugging:
-#define DEBUG 1           // Serial print timings
+#define DEBUG 1             // Serial print timings
+//#define DEBUG_DATA 1        // Serial print sensor data
 
 // Tunable parameters:
-#define SAMPLE_RATE 200   // sample rate in milliseconds
+#define SAMPLE_RATE 100     // sample rate in milliseconds
 #define SEALEVELPRESSURE_HPA 1026.753  // Depends on weather. Default is 1013.25
-#define POWER 23          // transmitter power from 5 to 23 dBm (default is 13 dBm)
-#define NUM_AVG 20        // how many data points are in the pitot tube moving average
+#define POWER 23            // transmitter power from 5 to 23 dBm (default is 13 dBm)
+#define NUM_AVG 20          // how many data points are in the pitot tube moving average
 
 // Probably never change these:
-#define GPS_SERIAL Serial1// GPS TX/RX
-#define BNO_ADDR 0x29     // IMU I2C address
-#define PITOT_ADDR 0x28   // MS4525 sensor I2C address
 #define PACKET_SIZE RH_RF95_MAX_MESSAGE_LEN  // Max radio packet size (251 bytes)
-#define CARD_SELECT 4     // SD card pin
-#define BUTTON A5         // Momentary button
-#define DEBOUNCE 1500     // Milliseconds between registering presses
-#define RED_LED 13        // Built-in LED
-#define GREEN_LED 8       // Built-in LED
-#define RFM95_CS A1       // LoRa CS pin
-#define RFM95_RST A3      // LoRa RST pin
-#define RFM95_INT A2      // LoRa INT pin
-#define RF95_FREQ 915.0   // LoRa frequency (MHz)
+#define STRAIN_0    A0      // Strain gauge 0 pin
+#define STRAIN_1    A4      // Strain gauge 1 pin
+#define GPS_SERIAL  Serial1 // GPS TX/RX
+#define BNO_ADDR    0x29    // IMU I2C address
+#define PITOT_ADDR  0x28    // MS4525 sensor I2C address
+#define CARD_SELECT 4       // SD card pin
+#define BUTTON      A5      // Momentary button
+#define DEBOUNCE    1500    // Milliseconds between registering presses
+#define RED_LED     13      // Built-in LED
+#define GREEN_LED   8       // Built-in LED
+#define RFM95_CS    A1      // LoRa CS pin
+#define RFM95_RST   A3      // LoRa RST pin
+#define RFM95_INT   A2      // LoRa INT pin
+#define RF95_FREQ   915.0   // LoRa frequency (MHz)
 
 
 // Create instances of sensor classes
@@ -52,34 +55,35 @@ Adafruit_BMP3XX bmp;                                  // Altimeter
 RH_RF95 rf95(RFM95_CS, RFM95_INT);                    // LoRa
 
 // Global variables (initialized to 0)
-unsigned long prev_sample;      // Time in millis of last sample
-unsigned long count;            // Sample counter
-unsigned long prev_press;       // Time in millis of last button press
-unsigned long packetnum;        // Packet counter
-unsigned int p_pres;            // Pitot tube raw pressure
-unsigned int p_temp;            // Pitot tube raw temp
-double p_psi;                   // Pitot tube pressure (psi)
-double p_vel;                   // Pitot tube velocity
-double p_avg;                   // Pitot tube average velocity (avg of last X data points)
-double p_cel;                   // Pitot tube temp (*C)
-int p_stat;                     // Pitot tube status 0: good 1, 2: error
-double avg[NUM_AVG];            // Pitot tube velocity moving average
-double b_pres;                  // Altimeter pressure (hPa)
-double b_alt;                   // Altimeter meters above sea level
-File logfile;                   // File object to store open file
-char fname[] = "/FLIGHT00.TXT"; // Filename, chars 7,8 are incremented
-String GPSstr = "\n";           // GPS NMEA formatted string
-uint8_t sys;                    // IMU overall status [0-3] uncalibrated->fully calibrated
-uint8_t gyro;                   // IMU gyroscope status [0-3]
-uint8_t accel;                  // IMU accelerometer status [0-3]
-uint8_t mag;                    // IMU magnetometer status [0-3]
-boolean record;                 // Record data - state changed by button
+unsigned long start;        // Time in millis when recording started
+unsigned long prev_sample;  // Time in millis of last sample
+unsigned long count;        // Sample counter
+unsigned long prev_press;   // Time in millis of last button press
+unsigned long packetnum;    // Packet counter
+unsigned int p_pres;        // Pitot tube raw pressure
+unsigned int p_temp;        // Pitot tube raw temp
+double  p_psi;              // Pitot tube pressure (psi)
+double  p_vel;              // Pitot tube velocity
+double  p_avg;              // Pitot tube average velocity (avg of last X data points)
+double  p_cel;              // Pitot tube temp (*C)
+int     p_stat;             // Pitot tube status 0: good 1, 2: error
+double  avg[NUM_AVG];       // Pitot tube velocity moving average
+double  b_pres;             // Altimeter pressure (hPa)
+double  b_alt;              // Altimeter meters above sea level
+File    logfile;            // File object to store open file
+uint8_t sys;                // IMU overall status [0-3] uncalibrated->fully calibrated
+uint8_t gyro;               // IMU gyroscope status [0-3]
+uint8_t accel;              // IMU accelerometer status [0-3]
+uint8_t mag;                // IMU magnetometer status [0-3]
+boolean record;             // Record data - state changed by button
+String  GPSstr = "\n";      // GPS NMEA formatted string
+char    fname[] = "/FLIGHT00.TXT";  // Filename, chars 7,8 are incremented
 
 // Debugging timing varibles
 #ifdef DEBUG
-unsigned long time_logging;     // Time in millis spent reading from sensors and logging
-unsigned long time_radio;       // Time in millis sending packet via radio
-unsigned long time_elapsed;     // time_logging + time_radio
+unsigned long time_logging; // Time in millis spent reading from sensors and logging
+unsigned long time_radio;   // Time in millis sending packet via radio
+unsigned long time_elapsed; // time_logging + time_radio
 #endif
 
 void setup(void)
@@ -183,6 +187,10 @@ void loop(void) {
     
     if (record) {
       start_record();
+      start = millis();
+    }
+    else if (logfile) {
+      logfile.close();
     }
   }
 
@@ -233,13 +241,12 @@ void loop(void) {
 
 
     // print data from all sensors to Serial and logfile
-    logfile = SD.open(fname, FILE_WRITE);
 
-    #ifdef DEBUG
+    #ifdef DEBUG_DATA
       Serial.print("Data: ");
     #endif
     
-    sensorPrintULo(prev_sample, logfile);
+    sensorPrintULo(prev_sample-start, logfile);
     sensorPrintULo(count, logfile);
     sensorPrintInt(sys, logfile);
     sensorPrintInt(p_stat, logfile);
@@ -266,8 +273,6 @@ void loop(void) {
     sensorPrintDou(b_alt, 3, logfile);
     sensorPrintStr(GPSstr, logfile);
 
-    logfile.close();
-
     #ifdef DEBUG
       time_logging = millis() - time_logging;
       time_radio = millis();
@@ -283,24 +288,21 @@ void loop(void) {
     memset(radiopacket,0,PACKET_SIZE);
 
     /* PACKET CONTENTS:
-     * COUNT
-     * PREV_SAMPLE
+     * MILLIS
      * AIRSPEED (moving average)
      * ALTITUDE
      * PITCH
      * ROLL
-     * LINX
      * RSSI
      */
-    sprintf(radiopacket, "%d,%d,%.2f,%.2f,%.2f,%.2f,%.2f,", 
-      count,
-      prev_sample,
-      p_avg,
-      b_alt,
-      euler.y(),
-      euler.z(),
-      lin.x()
-    );
+
+      sprintf(radiopacket, "%d,%.0f,%.0f,%.1f,%.1f,",
+        prev_sample-start,
+        p_avg,
+        b_alt,
+        euler.y(),
+        euler.z()
+      );
 
     // blink
     digitalWrite(RED_LED, LOW);
@@ -314,10 +316,10 @@ void loop(void) {
       time_radio = millis() - time_radio;
       time_elapsed = time_logging + time_radio;
       
-      Serial.print("Packet: ");
-      Serial.println(radiopacket);
-      Serial.print("Packet len: ");
-      Serial.println(strlen(radiopacket));
+//      Serial.print("Packet: ");
+//      Serial.println(radiopacket);
+//      Serial.print("Packet len: ");
+//      Serial.println(strlen(radiopacket));
       Serial.print("time_logging: ");
       Serial.println(time_logging);
       Serial.print("time_radio: ");
@@ -364,6 +366,8 @@ void start_record() {
       break;
     }
   }
+  logfile = SD.open(fname, FILE_WRITE);
+
 }
 
 
@@ -374,7 +378,7 @@ int fetch_pitot(unsigned int *p_pres, unsigned int *p_temp)
 {
   Wire.beginTransmission(PITOT_ADDR);
   Wire.endTransmission();
-  delay(10);
+  //delay(10);
   
   // Request 4 bytes = status (2 bits) + pressure (14 bits) + temp (11 bits) + 5 extra bits
   Wire.requestFrom((int)PITOT_ADDR, (int)4);  
@@ -449,7 +453,7 @@ void blinkError() {
  * Records sensor reading into Serial and logfile, adding comma after
  */
 void sensorPrintULo(unsigned long data, File logfile) {
-  #ifdef DEBUG
+  #ifdef DEBUG_DATA
     Serial.print(data);
     Serial.print(",");
   #endif
@@ -465,7 +469,7 @@ void sensorPrintULo(unsigned long data, File logfile) {
  * Records sensor reading into Serial and logfile, adding comma after
  */
 void sensorPrintInt(int data, File logfile) {
-  #ifdef DEBUG
+  #ifdef DEBUG_DATA
     Serial.print(data);
     Serial.print(",");
   #endif
@@ -481,7 +485,7 @@ void sensorPrintInt(int data, File logfile) {
  * Records sensor reading into Serial and logfile, adding comma after
  */
 void sensorPrintDou(double data, int digits, File logfile) {
-  #ifdef DEBUG
+  #ifdef DEBUG_DATA
     Serial.print(data, digits);
     Serial.print(",");
   #endif
@@ -497,7 +501,7 @@ void sensorPrintDou(double data, int digits, File logfile) {
  * Records sensor reading into Serial and logfile
  */
 void sensorPrintStr(String str, File logfile) {
-  #ifdef DEBUG
+  #ifdef DEBUG_DATA
     Serial.print(str);
   #endif
     
