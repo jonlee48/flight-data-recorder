@@ -21,7 +21,8 @@ Count, System Calibration level (0-3), Linear Acceleration XYZ (m/s^2), Gyro XYZ
 #include <RH_RF95.h>
 
 // Uncomment this line to enable Serial debugging:
-#define DEBUG 1             // Serial print timings
+//#define DEBUG 1             // Enable debugging
+//#define DEBUG_TIMING 1      // Serial print timings
 //#define DEBUG_DATA 1        // Serial print sensor data
 
 // Tunable parameters:
@@ -35,6 +36,7 @@ Count, System Calibration level (0-3), Linear Acceleration XYZ (m/s^2), Gyro XYZ
 #define STRAIN_0    A0      // Strain gauge 0 pin
 #define STRAIN_1    A4      // Strain gauge 1 pin
 #define GPS_SERIAL  Serial1 // GPS TX/RX
+#define GPS_BUF_SZ  100     // GPS string buffer size
 #define BNO_ADDR    0x29    // IMU I2C address
 #define PITOT_ADDR  0x28    // MS4525 sensor I2C address
 #define CARD_SELECT 4       // SD card pin
@@ -76,11 +78,11 @@ uint8_t gyro;               // IMU gyroscope status [0-3]
 uint8_t accel;              // IMU accelerometer status [0-3]
 uint8_t mag;                // IMU magnetometer status [0-3]
 boolean record;             // Record data - state changed by button
-String  GPSstr = "\n";      // GPS NMEA formatted string
+String  gps_str;            // GPS NMEA formatted string
 char    fname[] = "/FLIGHT00.TXT";  // Filename, chars 7,8 are incremented
 
 // Debugging timing varibles
-#ifdef DEBUG
+#ifdef DEBUG_TIMING
 unsigned long time_logging; // Time in millis spent reading from sensors and logging
 unsigned long time_radio;   // Time in millis sending packet via radio
 unsigned long time_elapsed; // time_logging + time_radio
@@ -110,10 +112,11 @@ void setup(void)
 
   // GPS SETUP
   GPS_SERIAL.begin(9600);
-  // Output only GGA NMEA sentences
-  GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_GGAONLY);
-  // And send 1 update per second (fastest GPS can go)
-  GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
+  // turn on only the "minimum recommended" data for high update rates!
+  GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCONLY);
+  // 10 Hz update rate - for 9600 baud, output must be RMC only
+  GPS.sendCommand(PMTK_SET_NMEA_UPDATE_10HZ);
+
 
 
   // BNO SETUP
@@ -199,12 +202,12 @@ void loop(void) {
   if (record && millis() >= prev_sample + SAMPLE_RATE) {
     prev_sample = millis();
 
-    #ifdef DEBUG
+    #ifdef DEBUG_TIMING
       time_logging = millis();
     #endif
 
     // read from sensors
-    getGPS();
+    gps_str = update_gps();
     bno.getCalibration(&sys, &gyro, &accel, &mag);
     imu::Vector<3> lin = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
     imu::Vector<3> rps = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
@@ -271,9 +274,9 @@ void loop(void) {
     sensorPrintDou(bmp.temperature, 3, logfile);
     sensorPrintDou(b_pres, 3, logfile);
     sensorPrintDou(b_alt, 3, logfile);
-    sensorPrintStr(GPSstr, logfile);
+    sensorPrintStr(gps_str, logfile);
 
-    #ifdef DEBUG
+    #ifdef DEBUG_TIMING
       time_logging = millis() - time_logging;
       time_radio = millis();
     #endif
@@ -312,7 +315,7 @@ void loop(void) {
     rf95.send((uint8_t *)radiopacket, strlen(radiopacket));
     rf95.waitPacketSent();
     
-    #ifdef DEBUG
+    #ifdef DEBUG_TIMING
       time_radio = millis() - time_radio;
       time_elapsed = time_logging + time_radio;
       
@@ -422,16 +425,32 @@ double moving_avg(double last) {
 }
 
 /* 
- * Update GPSstr
+ * Update gps_str. Reads one character at a time from GPS_SERIAL
  */
-void getGPS() {
-  char c = GPS.read();
-  if (GPS.newNMEAreceived()) {    
-    if (!GPS.parse(GPS.lastNMEA())) { // if checksum fails, don't print the data
-      GPSstr = "\n";
+String update_gps() {
+  char gps_buf[GPS_BUF_SZ];
+  memset(gps_buf, 0, GPS_BUF_SZ);
+  int idx = 0;
+  while (GPS_SERIAL.available()) {
+    char c = GPS_SERIAL.read();
+
+    // error checking
+    if (idx >= GPS_BUF_SZ) {
+      return String("\n");
     }
-    else {
-      GPSstr = GPS.lastNMEA();
+
+    // got '$' in the middle of buf
+    if (c == '$' && idx > 0) {
+      memset(gps_buf, 0, GPS_BUF_SZ);
+      idx = 0;
+    }
+    
+    gps_buf[idx] = c;
+    idx++;
+
+    // got end of $GPRMC NEMA string
+    if (c == '\n') {
+      return String(gps_buf);
     }
   }
 }
