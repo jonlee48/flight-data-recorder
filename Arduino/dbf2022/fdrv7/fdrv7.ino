@@ -82,6 +82,7 @@ uint8_t mag;                // IMU magnetometer status [0-3]
 boolean record;             // Record data - state changed by button
 String  gps_str;            // GPS NMEA formatted string
 char    fname[] = "/FLIGHT00.TXT";  // Filename, chars 7,8 are incremented
+const int IMU_SIGN[3] = {1,-1,1};   // Magnitude of sign of Euler x, y, z angles
 
 // Debugging timing varibles
 #ifdef DEBUG_TIMING
@@ -202,6 +203,14 @@ void loop(void) {
     }
   }
 
+  // turn on green light if IMU is calibrated
+  bno.getCalibration(&sys, &gyro, &accel, &mag);
+  if (sys > 0) {
+    digitalWrite(GREEN_LED, HIGH);
+  }
+  else {
+    digitalWrite(GREEN_LED, LOW);
+  }
   
   // only record if it's time to sample
   if (record && millis() >= prev_sample + SAMPLE_RATE) {
@@ -213,7 +222,6 @@ void loop(void) {
 
     // read from sensors
     gps_str = update_gps();
-    bno.getCalibration(&sys, &gyro, &accel, &mag);
     imu::Vector<3> lin = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
     imu::Vector<3> rps = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
     imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
@@ -242,15 +250,6 @@ void loop(void) {
     b_pres = bmp.pressure / 100.0;
     b_alt = bmp.readAltitude(SEALEVELPRESSURE_HPA);
 
-    // turn on green light if IMU is calibrated
-    if (sys > 0) {
-      digitalWrite(GREEN_LED, HIGH);
-    }
-    else {
-      digitalWrite(GREEN_LED, LOW);
-    }
-
-
     // print data from all sensors to Serial and logfile
 
     #ifdef DEBUG_DATA
@@ -268,15 +267,15 @@ void loop(void) {
     sensorPrintDou(p_cel, 3, logfile);
     sensorPrintInt(strain0, logfile);
     sensorPrintInt(strain1, logfile);
-    sensorPrintDou(lin.x(), 3, logfile);
-    sensorPrintDou(lin.y(), 3, logfile);
-    sensorPrintDou(lin.z(), 3, logfile);
-    sensorPrintDou(rps.x(), 3, logfile);
-    sensorPrintDou(rps.y(), 3, logfile);
-    sensorPrintDou(rps.z(), 3, logfile);
-    sensorPrintDou(euler.x(), 3, logfile);
-    sensorPrintDou(euler.y(), 3, logfile);
-    sensorPrintDou(euler.z(), 3, logfile);
+    sensorPrintDou(lin.x() * IMU_SIGN[0], 3, logfile);
+    sensorPrintDou(lin.y() * IMU_SIGN[1], 3, logfile);
+    sensorPrintDou(lin.z() * IMU_SIGN[2], 3, logfile);
+    sensorPrintDou(rps.x() * IMU_SIGN[0], 3, logfile);
+    sensorPrintDou(rps.y() * IMU_SIGN[1], 3, logfile);
+    sensorPrintDou(rps.z() * IMU_SIGN[2], 3, logfile);
+    sensorPrintDou(euler.x() * IMU_SIGN[0], 3, logfile);
+    sensorPrintDou(euler.y() * IMU_SIGN[1], 3, logfile);
+    sensorPrintDou(euler.z() * IMU_SIGN[2], 3, logfile);
     sensorPrintDou(quat.w(), 3, logfile);
     sensorPrintDou(quat.x(), 3, logfile);
     sensorPrintDou(quat.y(), 3, logfile);
@@ -313,8 +312,8 @@ void loop(void) {
         prev_sample-start,
         p_avg,
         b_alt,
-        euler.y(),
-        euler.z()
+        euler.y() * IMU_SIGN[1],
+        euler.z() * IMU_SIGN[2]
       );
 
     // blink
