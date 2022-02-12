@@ -27,7 +27,7 @@ Count, System Calibration level (0-3), Linear Acceleration XYZ (m/s^2), Gyro XYZ
 
 // Tunable parameters:
 #define SAMPLE_RATE 100     // sample rate in milliseconds
-#define SEALEVELPRESSURE_HPA 1026.753  // Depends on weather. Default is 1013.25
+#define SEALEVELPRESSURE_HPA 1013.25  // Depends on weather. Default is 1013.25
 #define POWER 23            // transmitter power from 5 to 23 dBm (default is 13 dBm)
 #define NUM_AVG 20          // how many data points are in the pitot tube moving average
 
@@ -70,6 +70,8 @@ double  p_avg;              // Pitot tube average velocity (avg of last X data p
 double  p_cel;              // Pitot tube temp (*C)
 int     p_stat;             // Pitot tube status 0: good 1, 2: error
 double  avg[NUM_AVG];       // Pitot tube velocity moving average
+int     strain0;            // Strain gauge 0 voltage
+int     strain1;            // Strain gauge 1 voltage
 double  b_pres;             // Altimeter pressure (hPa)
 double  b_alt;              // Altimeter meters above sea level
 File    logfile;            // File object to store open file
@@ -94,6 +96,9 @@ void setup(void)
   pinMode(RED_LED, OUTPUT);
   pinMode(BUTTON, INPUT_PULLUP);
   pinMode(RFM95_RST, OUTPUT);
+
+  pinMode(STRAIN_0, INPUT);
+  pinMode(STRAIN_1, INPUT);
   
   digitalWrite(RFM95_RST, HIGH);
   digitalWrite(GREEN_LED, LOW);
@@ -217,6 +222,9 @@ void loop(void) {
     bmp.performReading();
     p_stat = fetch_pitot(&p_pres, &p_temp);
 
+    strain0 = analogRead(STRAIN_0);
+    strain1 = analogRead(STRAIN_1);
+
     // pitot tube conversions
     p_psi = (double)((p_pres - 819.15) / 14744.7);
     p_psi = p_psi - 0.49060678;
@@ -258,6 +266,8 @@ void loop(void) {
     sensorPrintDou(p_psi, 10, logfile);
     sensorPrintDou(p_vel, 3, logfile);
     sensorPrintDou(p_cel, 3, logfile);
+    sensorPrintInt(strain0, logfile);
+    sensorPrintInt(strain1, logfile);
     sensorPrintDou(lin.x(), 3, logfile);
     sensorPrintDou(lin.y(), 3, logfile);
     sensorPrintDou(lin.z(), 3, logfile);
