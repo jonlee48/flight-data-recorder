@@ -1,13 +1,10 @@
-/*
-Outputs data in csv format with 27 values per line, 12 sensor readings + GPS NMEA GPGGA sentence
-Count, System Calibration level (0-3), Linear Acceleration XYZ (m/s^2), Gyro XYZ (radians/sec), Quaternion WXYZ, GPS NMEA GPGGA sentence
-*/
-
-/* 
+/* Flight Data Recorder
+ *  DBF 2022
+ *  Jonathan Lee
  * Inline documentation:
- * BUTTON - used to start & stop recording
- * GREEN_LED - solid on if calibrated, blinks upon initialization error
- * RED_LED - blinks when sending data/recording
+ *  BUTTON - used to start & stop recording
+ *  GREEN_LED - solid on if calibrated, blinks upon initialization error
+ *  RED_LED - blinks when sending data/recording
  */
 
 #include <SD.h> 
@@ -83,6 +80,35 @@ boolean record;             // Record data - state changed by button
 String  gps_str;            // GPS NMEA formatted string
 char    fname[] = "/FLIGHT00.TXT";  // Filename, chars 7,8 are incremented
 const int IMU_SIGN[3] = {1,-1,1};   // Magnitude of sign of Euler x, y, z angles
+const String header =               // header for columns at top of csv file
+"time_since_start,\
+count,\
+sys,\
+p_stat,\
+p_pres,\
+p_temp,\
+p_psi,\
+p_vel,\
+p_cel,\
+strain0,\
+strain1,\
+lin_x,\
+lin_y,\
+lin_z,\
+rps_x,\
+rps_y,\
+rps_z,\
+euler_x,\
+euler_y,\
+euler_z,\
+quat_w,\
+quat_x,\
+quat_y,\
+quat_z,\
+bmp_temp,\
+bmp_pres,\
+bmp_alt,\
+gps_str";
 
 // Debugging timing varibles
 #ifdef DEBUG_TIMING
@@ -379,6 +405,7 @@ void start_record() {
     }
   }
   logfile = SD.open(fname, FILE_WRITE);
+  logfile.println(header);
 
 }
 
