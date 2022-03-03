@@ -38,6 +38,8 @@ void loop() {
 void moveDegrees(int deg) {
   // convert degrees to steps
   int steps = int(deg/360) * STEPS;
+  myStepper1.step(steps);
+  myStepper2.step(steps);
   for (int i = 0; i < steps; i++) {
     myStepper1.step(1);
     myStepper2.step(-1);
