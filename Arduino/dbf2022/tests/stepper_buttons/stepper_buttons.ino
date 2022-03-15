@@ -1,3 +1,4 @@
+
 #include <Stepper.h>
 
 #define FORWARD_PIN 3  // button to move belt forward by INTERVAL
@@ -56,3 +57,4 @@ void moveDegrees(int deg) {
     //myStepper2.step(-1);
   //}
 }
+
