@@ -23,7 +23,7 @@ import queue
 import dash_daq as daq
 import os
 
-OFFLINE = False      # If False, read data from file. If True, read data from serial port
+OFFLINE = True      # If False, read data from file. If True, read data from serial port
 PORT = 'COM9'       # Port of Ground Station, check name in Arduino IDE > Tools > Port
 BAUD_RATE = 115200  # baud rate (e.g. 9600 or 115200)
 REFRESH_RATE = 1    # how fast graph updates (milliseconds)
@@ -98,6 +98,7 @@ app = dash.Dash(__name__)
 fig1 = px.line(df, x='millis', y='airspeed', title='airspeed (mph)')
 fig2 = px.line(df, x='millis', y='altitude', title='altitude (ft)')
 fig3 = px.line(df, x='millis', y='pitch', title='pitch (deg)')
+fig4 = px.line(df, x='millis', y='rssi', title='rssi')
 #fig1 = make_subplots(specs=[[{'secondary_y': True}]])
 #fig1.add_trace(go.Scatter(x=df['millis'], y=df['pitch'], mode='lines', name='pitch (deg)'), secondary_y=False)
 #fig1.add_trace(go.Scatter(x=df['millis'], y=df['altitude'], mode='lines', name='altitude (m)'), secondary_y=False)
@@ -138,6 +139,7 @@ app.layout = html.Div(children=[
     dcc.Graph(id='line1',figure=fig1),
     dcc.Graph(id='line2',figure=fig2),
     dcc.Graph(id='line3',figure=fig3),
+    dcc.Graph(id='line4',figure=fig4),
     # triggers update to batch-store
     dcc.Interval(
         id='batch-interval',
@@ -155,6 +157,7 @@ app.layout = html.Div(children=[
               Output('line1', 'figure'),
               Output('line2', 'figure'),
               Output('line3', 'figure'),
+              Output('line4', 'figure'),
               # readouts:
               Output('millis', 'children'),
               Output('airspeed', 'children'),
@@ -170,8 +173,9 @@ app.layout = html.Div(children=[
               # feed in figure state:
               State('line1', 'figure'),
               State('line2', 'figure'),
-              State('line3', 'figure'))
-def batchUpdate(n, fig1, fig2, fig3):
+              State('line3', 'figure'),
+              State('line4', 'figure'))
+def batchUpdate(n, fig1, fig2, fig3, fig4):
     batchStart = len(df)
     while not queue.empty():
         line = queue.get()
@@ -190,6 +194,7 @@ def batchUpdate(n, fig1, fig2, fig3):
         fig1['data'].append({'x': [], 'y': []})
         fig2['data'].append({'x': [], 'y': []})
         fig3['data'].append({'x': [], 'y': []})
+        fig4['data'].append({'x': [], 'y': []})
 
     fig1['data'][0]['x'].extend(latest.index.values.tolist())
     fig1['data'][0]['y'].extend(latest['airspeed'])
@@ -197,6 +202,8 @@ def batchUpdate(n, fig1, fig2, fig3):
     fig2['data'][0]['y'].extend(latest['altitude'])
     fig3['data'][0]['x'].extend(latest.index.values.tolist())
     fig3['data'][0]['y'].extend(latest['pitch'])
+    fig4['data'][0]['x'].extend(latest.index.values.tolist())
+    fig4['data'][0]['y'].extend(latest['rssi'])
 
     # update readouts
     millis = 'Millis: {}'.format(df['millis'].values[-1])
@@ -211,7 +218,7 @@ def batchUpdate(n, fig1, fig2, fig3):
     gauge_pitch = float(df['pitch'].values[-1])
 
 
-    return fig1, fig2, fig3, millis, airspeed, altitude, pitch, roll, rssi, gauge_val, gauge_pitch
+    return fig1, fig2, fig3, fig4, millis, airspeed, altitude, pitch, roll, rssi, gauge_val, gauge_pitch
 
 
 # save line graphs
